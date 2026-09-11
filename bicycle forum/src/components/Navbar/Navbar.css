@@ -44,6 +44,27 @@
   }
 }
 
+#nav-username {
+  color: var(--text-h);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+#navbar nav button {
+  color: var(--text);
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 15px;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--text-h);
+  }
+}
+
 #theme-toggle {
   border: 1px solid var(--border);
   background: var(--code-bg);

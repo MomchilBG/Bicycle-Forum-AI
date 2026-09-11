@@ -173,7 +173,7 @@ export type Database = {
           reputation: number
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
-          username: string | null
+          username: string
         }
         Insert: {
           avatar_url?: string | null
@@ -187,7 +187,7 @@ export type Database = {
           reputation?: number
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
-          username?: string | null
+          username: string
         }
         Update: {
           avatar_url?: string | null
@@ -329,8 +329,23 @@ export type Database = {
         Args: { target_user: string }
         Returns: undefined
       }
+      email_for_username: { Args: { p_username: string }; Returns: string }
       is_admin: { Args: { uid?: string }; Returns: boolean }
       is_blocked: { Args: { uid?: string }; Returns: boolean }
+      is_username_taken: { Args: { p_username: string }; Returns: boolean }
+      public_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          reputation: number
+          role: Database["public"]["Enums"]["user_role"]
+          username: string
+        }[]
+      }
     }
     Enums: {
       user_role: "user" | "admin"

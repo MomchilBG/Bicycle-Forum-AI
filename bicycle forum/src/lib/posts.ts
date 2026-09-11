@@ -13,30 +13,12 @@ export interface PlatformStats {
   postCount: number
 }
 
-// The generated Database types don't model PostgREST's embedded-resource
-// shorthand (`author:profiles(...)`), so the raw row is typed by hand to
-// match the select string below.
 interface PostRow {
   id: string
   title: string
   created_at: string
   comment_count: number
-  author: { username: string | null; first_name: string; last_name: string } | null
-}
-
-function displayName(author: PostRow['author']): string {
-  if (!author) return 'Unknown'
-  return author.username ?? `${author.first_name} ${author.last_name}`
-}
-
-function toPostSummary(post: PostRow): PostSummary {
-  return {
-    id: post.id,
-    title: post.title,
-    author: displayName(post.author),
-    commentCount: post.comment_count,
-    createdAt: post.created_at,
-  }
+  author_id: string
 }
 
 export async function getPlatformStats(): Promise<PlatformStats> {
@@ -46,14 +28,29 @@ export async function getPlatformStats(): Promise<PlatformStats> {
 }
 
 async function getPosts(orderBy: 'comment_count' | 'created_at', limit: number): Promise<PostSummary[]> {
-  const { data, error } = await supabase
+  const { data: posts, error } = await supabase
     .from('posts')
-    .select('id, title, created_at, comment_count, author:profiles(username, first_name, last_name)')
+    .select('id, title, created_at, comment_count, author_id')
     .order(orderBy, { ascending: false })
     .limit(limit)
 
-  if (error || !data) return []
-  return (data as unknown as PostRow[]).map(toPostSummary)
+  if (error || !posts || posts.length === 0) return []
+
+  // profiles.username/email aren't publicly readable (see migration 08), so
+  // author display names come from the public_profiles() function, which
+  // only exposes the safe, non-sensitive columns.
+  const authorIds = [...new Set(posts.map((post) => post.author_id))]
+  const { data: authors } = await supabase.rpc('public_profiles').in('id', authorIds)
+
+  const authorNameById = new Map((authors ?? []).map((author) => [author.id, author.username]))
+
+  return (posts as PostRow[]).map((post) => ({
+    id: post.id,
+    title: post.title,
+    author: authorNameById.get(post.author_id) ?? 'Unknown',
+    commentCount: post.comment_count,
+    createdAt: post.created_at,
+  }))
 }
 
 export function getMostCommentedPosts(limit = 10): Promise<PostSummary[]> {

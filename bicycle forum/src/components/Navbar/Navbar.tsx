@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeContext'
+import { useAuth } from '../../auth/AuthContext'
 import './Navbar.css'
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
@@ -8,6 +9,7 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme()
+  const { profile, signOut } = useAuth()
   const isDark = theme === 'dark' || (theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   return (
@@ -19,12 +21,23 @@ function Navbar() {
         <NavLink to="/" end className={navLinkClass}>
           Home
         </NavLink>
-        <NavLink to="/login" className={navLinkClass}>
-          Log in
-        </NavLink>
-        <NavLink to="/register" className={navLinkClass}>
-          Register
-        </NavLink>
+        {profile ? (
+          <>
+            <span id="nav-username">{profile.username}</span>
+            <button type="button" onClick={() => void signOut()}>
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <NavLink to="/login" className={navLinkClass}>
+              Log in
+            </NavLink>
+            <NavLink to="/register" className={navLinkClass}>
+              Register
+            </NavLink>
+          </>
+        )}
       </nav>
       <button
         type="button"
