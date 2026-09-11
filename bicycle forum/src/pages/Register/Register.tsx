@@ -14,11 +14,15 @@ interface FormValues {
 }
 
 type FormErrors = Partial<Record<keyof FormValues, string>>
+type Touched = Partial<Record<keyof FormValues, boolean>>
 
 const NAME_PATTERN = /^.{4,32}$/
 const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
+// Only the checks that don't need a round-trip to the database - those run
+// live as the user types/blurs. Username availability still has to be
+// checked against Supabase at submit time.
 function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {}
 
@@ -54,23 +58,45 @@ function Register() {
     password: '',
     confirmPassword: '',
   })
-  const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<Touched>({})
+  const [usernameTakenError, setUsernameTakenError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  // Derived from the latest values on every render, so an error clears the
+  // moment it's fixed instead of waiting for the next blur or submit.
+  const liveErrors = validate(values)
+
+  function fieldError(field: keyof FormValues): string | undefined {
+    if (!touched[field]) return undefined
+    if (field === 'username' && usernameTakenError && !liveErrors.username) return usernameTakenError
+    return liveErrors[field]
+  }
+
   function updateField<K extends keyof FormValues>(field: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }))
+    if (field === 'username') setUsernameTakenError(null)
+  }
+
+  function markTouched(field: keyof FormValues) {
+    setTouched((current) => ({ ...current, [field]: true }))
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setFormError(null)
     setSuccessMessage(null)
+    setTouched({
+      firstName: true,
+      lastName: true,
+      username: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    })
 
-    const fieldErrors = validate(values)
-    setErrors(fieldErrors)
-    if (Object.keys(fieldErrors).length > 0) return
+    if (Object.keys(liveErrors).length > 0) return
 
     setSubmitting(true)
 
@@ -81,7 +107,7 @@ function Register() {
     const { data: usernameTaken } = await supabase.rpc('is_username_taken', { p_username: values.username })
     if (usernameTaken) {
       setSubmitting(false)
-      setErrors((current) => ({ ...current, username: 'This username is already taken.' }))
+      setUsernameTakenError('This username is already taken.')
       return
     }
 
@@ -104,7 +130,7 @@ function Register() {
       } else if (error.message.includes('profiles_username_key')) {
         // Rare race: someone else took the username between the check above
         // and this insert.
-        setFormError('This username is already taken.')
+        setUsernameTakenError('This username is already taken.')
       } else if (error.message.toLowerCase().includes('database error')) {
         setFormError('Something went wrong creating your account. Please try again.')
       } else {
@@ -132,9 +158,12 @@ function Register() {
             id="firstName"
             value={values.firstName}
             onChange={(event) => updateField('firstName', event.target.value)}
+            onBlur={() => markTouched('firstName')}
+            placeholder="4-32 characters"
+            maxLength={32}
             autoComplete="given-name"
           />
-          {errors.firstName && <span className="auth-error">{errors.firstName}</span>}
+          {fieldError('firstName') && <span className="auth-error">{fieldError('firstName')}</span>}
         </div>
 
         <div className="auth-field">
@@ -143,9 +172,12 @@ function Register() {
             id="lastName"
             value={values.lastName}
             onChange={(event) => updateField('lastName', event.target.value)}
+            onBlur={() => markTouched('lastName')}
+            placeholder="4-32 characters"
+            maxLength={32}
             autoComplete="family-name"
           />
-          {errors.lastName && <span className="auth-error">{errors.lastName}</span>}
+          {fieldError('lastName') && <span className="auth-error">{fieldError('lastName')}</span>}
         </div>
 
         <div className="auth-field">
@@ -154,9 +186,12 @@ function Register() {
             id="username"
             value={values.username}
             onChange={(event) => updateField('username', event.target.value.toLowerCase())}
+            onBlur={() => markTouched('username')}
+            placeholder="3-32 chars: lowercase letters, numbers, underscores"
+            maxLength={32}
             autoComplete="username"
           />
-          {errors.username && <span className="auth-error">{errors.username}</span>}
+          {fieldError('username') && <span className="auth-error">{fieldError('username')}</span>}
         </div>
 
         <div className="auth-field">
@@ -166,9 +201,11 @@ function Register() {
             type="email"
             value={values.email}
             onChange={(event) => updateField('email', event.target.value)}
+            onBlur={() => markTouched('email')}
+            placeholder="you@example.com"
             autoComplete="email"
           />
-          {errors.email && <span className="auth-error">{errors.email}</span>}
+          {fieldError('email') && <span className="auth-error">{fieldError('email')}</span>}
         </div>
 
         <div className="auth-field">
@@ -178,9 +215,11 @@ function Register() {
             type="password"
             value={values.password}
             onChange={(event) => updateField('password', event.target.value)}
+            onBlur={() => markTouched('password')}
+            placeholder="At least 6 characters"
             autoComplete="new-password"
           />
-          {errors.password && <span className="auth-error">{errors.password}</span>}
+          {fieldError('password') && <span className="auth-error">{fieldError('password')}</span>}
         </div>
 
         <div className="auth-field">
@@ -190,9 +229,11 @@ function Register() {
             type="password"
             value={values.confirmPassword}
             onChange={(event) => updateField('confirmPassword', event.target.value)}
+            onBlur={() => markTouched('confirmPassword')}
+            placeholder="Re-enter your password"
             autoComplete="new-password"
           />
-          {errors.confirmPassword && <span className="auth-error">{errors.confirmPassword}</span>}
+          {fieldError('confirmPassword') && <span className="auth-error">{fieldError('confirmPassword')}</span>}
         </div>
 
         {formError && <p className="auth-form-error">{formError}</p>}
