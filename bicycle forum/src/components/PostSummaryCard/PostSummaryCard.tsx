@@ -1,4 +1,4 @@
-import type { PostSummary } from '../../data/mockForumData'
+import type { PostSummary } from '../../lib/posts'
 import './PostSummaryCard.css'
 
 function PostSummaryCard({ post }: { post: PostSummary }) {

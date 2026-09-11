@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
-import { getMostCommentedPosts, getMostRecentPosts, getPlatformStats } from '../../data/mockForumData'
+import { getMostCommentedPosts, getMostRecentPosts, getPlatformStats } from '../../lib/posts'
+import type { PlatformStats, PostSummary } from '../../lib/posts'
 import './Home.css'
 
 const features = [
@@ -11,9 +13,28 @@ const features = [
 ]
 
 function Home() {
-  const stats = getPlatformStats()
-  const mostCommented = getMostCommentedPosts()
-  const mostRecent = getMostRecentPosts()
+  const [stats, setStats] = useState<PlatformStats>({ userCount: 0, postCount: 0 })
+  const [mostCommented, setMostCommented] = useState<PostSummary[]>([])
+  const [mostRecent, setMostRecent] = useState<PostSummary[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([getPlatformStats(), getMostCommentedPosts(), getMostRecentPosts()]).then(
+      ([statsResult, mostCommentedResult, mostRecentResult]) => {
+        if (cancelled) return
+        setStats(statsResult)
+        setMostCommented(mostCommentedResult)
+        setMostRecent(mostRecentResult)
+        setLoading(false)
+      },
+    )
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <>
@@ -52,19 +73,31 @@ function Home() {
       <section id="post-lists">
         <div>
           <h2>Most commented</h2>
-          <ul>
-            {mostCommented.map((post) => (
-              <PostSummaryCard key={post.id} post={post} />
-            ))}
-          </ul>
+          {loading ? (
+            <p>Loading…</p>
+          ) : mostCommented.length === 0 ? (
+            <p>No posts yet — be the first to create one.</p>
+          ) : (
+            <ul>
+              {mostCommented.map((post) => (
+                <PostSummaryCard key={post.id} post={post} />
+              ))}
+            </ul>
+          )}
         </div>
         <div>
           <h2>Most recent</h2>
-          <ul>
-            {mostRecent.map((post) => (
-              <PostSummaryCard key={post.id} post={post} />
-            ))}
-          </ul>
+          {loading ? (
+            <p>Loading…</p>
+          ) : mostRecent.length === 0 ? (
+            <p>No posts yet — be the first to create one.</p>
+          ) : (
+            <ul>
+              {mostRecent.map((post) => (
+                <PostSummaryCard key={post.id} post={post} />
+              ))}
+            </ul>
+          )}
         </div>
       </section>
     </>
