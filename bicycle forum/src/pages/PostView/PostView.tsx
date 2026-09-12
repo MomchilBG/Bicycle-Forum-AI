@@ -40,8 +40,9 @@ function CommentBadges({ badges }: { badges: Badge[] }) {
 
 interface CommentBodyProps {
   comment: CommentItem
-  isOwn: boolean
   canReply: boolean
+  canEdit: boolean
+  canDelete: boolean
   isEditing: boolean
   editText: string
   editError: string | null
@@ -57,8 +58,9 @@ interface CommentBodyProps {
 
 function CommentBody({
   comment,
-  isOwn,
   canReply,
+  canEdit,
+  canDelete,
   isEditing,
   editText,
   editError,
@@ -114,15 +116,15 @@ function CommentBody({
                   Reply
                 </button>
               )}
-              {isOwn && (
-                <>
-                  <button type="button" className="action-link" onClick={onStartEdit}>
-                    Edit
-                  </button>
-                  <button type="button" className="action-link danger" onClick={onDelete} disabled={isDeleting}>
-                    {isDeleting ? 'Deleting…' : 'Delete'}
-                  </button>
-                </>
+              {canEdit && (
+                <button type="button" className="action-link" onClick={onStartEdit}>
+                  Edit
+                </button>
+              )}
+              {canDelete && (
+                <button type="button" className="action-link danger" onClick={onDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Deleting…' : 'Delete'}
+                </button>
               )}
             </div>
           </>
@@ -370,11 +372,19 @@ function PostViewForPost({ postId }: { postId: string }) {
   }
 
   function renderCommentBody(comment: CommentItem, canReply: boolean) {
+    const isOwn = profile?.id === comment.author.id
+    const isOwnAndNotBlocked = isOwn && !!profile && !profile.is_blocked
+    // While a comment is being edited, only its own Edit stays available -
+    // switching to edit a different comment would silently discard the
+    // first one's unsaved text with no warning.
+    const editLocked = editingCommentId !== null && editingCommentId !== comment.id
+
     return (
       <CommentBody
         comment={comment}
-        isOwn={profile?.id === comment.author.id}
         canReply={canReply && canComment}
+        canEdit={isOwnAndNotBlocked && !editLocked}
+        canDelete={isOwnAndNotBlocked}
         isEditing={editingCommentId === comment.id}
         editText={editText}
         editError={editError}
@@ -433,7 +443,7 @@ function PostViewForPost({ postId }: { postId: string }) {
           </ul>
         )}
 
-        {isOwnPost && (
+        {isOwnPost && !profile?.is_blocked && (
           <div id="post-actions">
             <Link to={`/posts/${postId}/edit`} className="action-link">
               Edit

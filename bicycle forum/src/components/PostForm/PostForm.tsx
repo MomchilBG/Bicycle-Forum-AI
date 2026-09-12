@@ -34,7 +34,11 @@ function PostForm({
   const [submitting, setSubmitting] = useState(false)
 
   function addTag() {
-    const trimmed = tagInput.trim()
+    // Underscores are reserved as the navbar search box's stand-in for a
+    // space in a multi-word #tag (see lib/search.ts) - normalize them away
+    // here so a tag can never contain one for real, which would otherwise
+    // make it permanently unfindable via its own "click to search" link.
+    const trimmed = tagInput.replace(/[_\s]+/g, ' ').trim()
     if (!trimmed) return
 
     if (trimmed.length > 32) {
