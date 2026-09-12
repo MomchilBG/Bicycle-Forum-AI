@@ -20,6 +20,12 @@
 #hero-stats {
   display: flex;
   gap: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  @media (max-width: 480px) {
+    gap: 24px;
+  }
 }
 
 #hero-stats div {
@@ -41,6 +47,8 @@
 #hero-cta {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .button {
@@ -74,6 +82,10 @@
 
   @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
   }
 }
 
