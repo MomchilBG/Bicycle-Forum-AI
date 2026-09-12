@@ -6,6 +6,7 @@ import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import Profile from './pages/Profile/Profile'
 import CreatePost from './pages/CreatePost/CreatePost'
+import PostView from './pages/PostView/PostView'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/posts/:id" element={<PostView />} />
         <Route element={<RequireAuth />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/posts/new" element={<CreatePost />} />

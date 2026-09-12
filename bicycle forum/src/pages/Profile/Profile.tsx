@@ -7,6 +7,7 @@ import { getPostsByAuthor } from '../../lib/posts'
 import type { PostSummary } from '../../lib/posts'
 import { supabase } from '../../lib/supabaseClient'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
+import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import '../auth.css'
 import './Profile.css'
 
@@ -198,9 +199,8 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
           <h2>Change password</h2>
           <div className="auth-field">
             <label htmlFor="newPassword">New password</label>
-            <input
+            <PasswordInput
               id="newPassword"
-              type="password"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
               placeholder="At least 6 characters"
@@ -209,9 +209,8 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
           </div>
           <div className="auth-field">
             <label htmlFor="confirmPassword">Confirm new password</label>
-            <input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               autoComplete="new-password"

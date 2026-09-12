@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import '../auth.css'
 
 function Login() {
@@ -23,31 +24,34 @@ function Login() {
 
     setSubmitting(true)
 
-    // supabase-js only signs in by email, so a username identifier is first
-    // resolved to its email via the narrow email_for_username() lookup
-    // (profiles.email itself isn't publicly readable - see migration 08).
-    let email = trimmedIdentifier
-    if (!trimmedIdentifier.includes('@')) {
-      const { data: resolvedEmail, error: lookupError } = await supabase.rpc('email_for_username', {
-        p_username: trimmedIdentifier,
-      })
-      if (lookupError || !resolvedEmail) {
-        setSubmitting(false)
+    try {
+      // supabase-js only signs in by email, so a username identifier is first
+      // resolved to its email via the narrow email_for_username() lookup
+      // (profiles.email itself isn't publicly readable - see migration 08).
+      let email = trimmedIdentifier
+      if (!trimmedIdentifier.includes('@')) {
+        const { data: resolvedEmail, error: lookupError } = await supabase.rpc('email_for_username', {
+          p_username: trimmedIdentifier,
+        })
+        if (lookupError || !resolvedEmail) {
+          setFormError('Invalid username/email or password.')
+          return
+        }
+        email = resolvedEmail
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
         setFormError('Invalid username/email or password.')
         return
       }
-      email = resolvedEmail
+
+      navigate('/')
+    } catch {
+      setFormError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    setSubmitting(false)
-
-    if (error) {
-      setFormError('Invalid username/email or password.')
-      return
-    }
-
-    navigate('/')
   }
 
   return (
@@ -67,9 +71,8 @@ function Login() {
 
         <div className="auth-field">
           <label htmlFor="password">Password</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"

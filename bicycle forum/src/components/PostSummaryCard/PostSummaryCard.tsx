@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { PostSummary } from '../../lib/posts'
 import { formatDateTime } from '../../lib/formatDate'
 import './PostSummaryCard.css'
@@ -5,7 +6,9 @@ import './PostSummaryCard.css'
 function PostSummaryCard({ post }: { post: PostSummary }) {
   return (
     <li className="post-summary-card">
-      <span className="post-title">{post.title}</span>
+      <Link to={`/posts/${post.id}`} className="post-title">
+        {post.title}
+      </Link>
       <span className="post-meta">
         by {post.author} · {post.commentCount} comments · {formatDateTime(post.createdAt)}
       </span>

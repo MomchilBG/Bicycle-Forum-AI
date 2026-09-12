@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import '../auth.css'
 
 interface FormValues {
@@ -210,9 +211,8 @@ function Register() {
 
         <div className="auth-field">
           <label htmlFor="password">Password</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             value={values.password}
             onChange={(event) => updateField('password', event.target.value)}
             onBlur={() => markTouched('password')}
@@ -224,9 +224,8 @@ function Register() {
 
         <div className="auth-field">
           <label htmlFor="confirmPassword">Confirm password</label>
-          <input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             value={values.confirmPassword}
             onChange={(event) => updateField('confirmPassword', event.target.value)}
             onBlur={() => markTouched('confirmPassword')}
