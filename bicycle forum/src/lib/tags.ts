@@ -16,12 +16,17 @@ async function getOrCreateTagId(name: string): Promise<{ id: string | null; erro
 }
 
 export async function attachTagsToPost(postId: string, tagNames: string[]): Promise<{ error: string | null }> {
-  const tagIds: string[] = []
+  // Dedupe defensively (the caller already does this too) and resolve them
+  // concurrently - each lookup/insert is independent of the others.
+  const uniqueNames = [...new Set(tagNames)]
+  const results = await Promise.all(
+    uniqueNames.map(async (name) => ({ name, ...(await getOrCreateTagId(name)) })),
+  )
 
-  for (const name of tagNames) {
-    const { id, error } = await getOrCreateTagId(name)
-    if (!id) return { error: `Couldn't save tag "${name}": ${error}` }
-    tagIds.push(id)
+  const tagIds: string[] = []
+  for (const result of results) {
+    if (!result.id) return { error: `Couldn't save tag "${result.name}": ${result.error}` }
+    tagIds.push(result.id)
   }
 
   if (tagIds.length === 0) return { error: null }
