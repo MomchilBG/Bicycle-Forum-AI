@@ -27,7 +27,11 @@ interface PostRow {
 }
 
 export async function getPlatformStats(): Promise<PlatformStats> {
-  const { data, error } = await supabase.from('platform_stats').select('user_count, post_count').single()
+  // A SECURITY DEFINER function, not a plain `.from()` select - platform_stats
+  // used to be a `security_invoker` view, which meant its profiles count ran
+  // under the viewer's own RLS (only their own row is visible to a non-admin),
+  // so most users always saw a user count of 0 or 1. See migration 20.
+  const { data, error } = await supabase.rpc('platform_stats').single()
   if (error || !data) return { userCount: 0, postCount: 0 }
   return { userCount: data.user_count ?? 0, postCount: data.post_count ?? 0 }
 }

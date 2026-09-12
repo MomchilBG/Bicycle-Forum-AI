@@ -320,13 +320,7 @@ export type Database = {
       }
     }
     Views: {
-      platform_stats: {
-        Row: {
-          post_count: number | null
-          user_count: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       apply_vote_effects: {
@@ -347,6 +341,13 @@ export type Database = {
       is_admin: { Args: { uid?: string }; Returns: boolean }
       is_blocked: { Args: { uid?: string }; Returns: boolean }
       is_username_taken: { Args: { p_username: string }; Returns: boolean }
+      platform_stats: {
+        Args: never
+        Returns: {
+          post_count: number
+          user_count: number
+        }[]
+      }
       public_profiles: {
         Args: never
         Returns: {
