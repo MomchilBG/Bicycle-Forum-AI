@@ -21,7 +21,8 @@ export interface PostDetail {
   title: string
   content: string
   createdAt: string
-  likeCount: number
+  upvoteCount: number
+  downvoteCount: number
   author: PublicProfile
   authorBadges: Badge[]
   myVote: 1 | -1 | null
@@ -66,7 +67,7 @@ async function getBadgesForUser(userId: string): Promise<Badge[]> {
 export async function getPostDetail(postId: string, viewerId: string | null): Promise<PostDetail | null> {
   const { data: post, error } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, like_count, author_id')
+    .select('id, title, content, created_at, like_count, dislike_count, author_id')
     .eq('id', postId)
     .single()
 
@@ -92,7 +93,8 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
     title: post.title,
     content: post.content,
     createdAt: post.created_at,
-    likeCount: post.like_count,
+    upvoteCount: post.like_count,
+    downvoteCount: post.dislike_count,
     author,
     authorBadges,
     myVote,

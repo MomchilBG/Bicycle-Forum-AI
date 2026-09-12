@@ -122,11 +122,41 @@
   }
 }
 
-#post-vote-count {
+#post-vote-score {
+  position: relative;
   color: var(--text-h);
   font-weight: 600;
   min-width: 24px;
   text-align: center;
+  cursor: default;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  &:hover #post-vote-tooltip,
+  &:focus-visible #post-vote-tooltip {
+    opacity: 1;
+  }
+}
+
+#post-vote-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  background: var(--text-h);
+  color: var(--bg);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
 }
 
 .post-view-hint {

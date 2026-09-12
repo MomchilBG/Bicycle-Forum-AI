@@ -125,6 +125,7 @@ export type Database = {
           comment_count: number
           content: string
           created_at: string
+          dislike_count: number
           id: string
           like_count: number
           title: string
@@ -135,6 +136,7 @@ export type Database = {
           comment_count?: number
           content: string
           created_at?: string
+          dislike_count?: number
           id?: string
           like_count?: number
           title: string
@@ -145,6 +147,7 @@ export type Database = {
           comment_count?: number
           content?: string
           created_at?: string
+          dislike_count?: number
           id?: string
           like_count?: number
           title?: string
@@ -201,7 +204,7 @@ export type Database = {
           reputation?: number
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
-          username?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -318,6 +321,7 @@ export type Database = {
     Functions: {
       apply_vote_effects: {
         Args: {
+          delta_dislikes: number
           delta_likes: number
           delta_reputation: number
           target_comment: string

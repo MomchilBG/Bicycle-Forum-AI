@@ -150,7 +150,13 @@ function PostViewForPost({ postId }: { postId: string }) {
           >
             ▲
           </button>
-          <span id="post-vote-count">{post.likeCount}</span>
+          <div id="post-vote-score" tabIndex={0}>
+            {post.upvoteCount - post.downvoteCount}
+            <span id="post-vote-tooltip">
+              {post.upvoteCount} upvote{post.upvoteCount === 1 ? '' : 's'} · {post.downvoteCount} downvote
+              {post.downvoteCount === 1 ? '' : 's'}
+            </span>
+          </div>
           <button
             type="button"
             className={post.myVote === -1 ? 'active' : ''}
@@ -204,9 +210,9 @@ function PostViewForPost({ postId }: { postId: string }) {
             <p className="post-view-hint">
               <Link to="/login">Log in</Link> to leave a comment.
             </p>
-          ) : (
+          ) : profile?.is_blocked ? (
             <p className="auth-form-error">You&apos;ve been blocked from commenting.</p>
-          )}
+          ) : null}
         </section>
       </article>
     </section>
