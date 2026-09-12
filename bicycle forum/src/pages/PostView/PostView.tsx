@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { castVote, createComment, getComments, getPostDetail } from '../../lib/postDetail'
-import type { CommentItem, PostDetail } from '../../lib/postDetail'
+import type { Badge, CommentItem, PostDetail } from '../../lib/postDetail'
 import { formatDateTime } from '../../lib/formatDate'
 import '../auth.css'
 import './PostView.css'
@@ -13,6 +13,35 @@ function AuthorAvatar({ author }: { author: { username: string; avatarUrl: strin
     <img className="author-avatar" src={author.avatarUrl} alt="" />
   ) : (
     <span className="author-avatar author-avatar-fallback">{author.username.slice(0, 1).toUpperCase()}</span>
+  )
+}
+
+function CommentBadges({ badges }: { badges: Badge[] }) {
+  if (badges.length === 0) return null
+  return (
+    <span className="comment-badges">
+      {badges.map((badge) => (
+        <span key={badge.id} className="comment-badge-pill" title={badge.description}>
+          {badge.name}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function CommentBody({ comment }: { comment: CommentItem }) {
+  return (
+    <div className="comment-row">
+      <AuthorAvatar author={comment.author} />
+      <div>
+        <div className="comment-meta">
+          <span className="comment-author">{comment.author.username}</span>
+          <CommentBadges badges={comment.badges} />
+          <span className="comment-date">{formatDateTime(comment.createdAt)}</span>
+        </div>
+        <p className="comment-content">{comment.content}</p>
+      </div>
+    </div>
   )
 }
 
@@ -37,6 +66,11 @@ function PostViewForPost({ postId }: { postId: string }) {
   const [commentText, setCommentText] = useState('')
   const [commentError, setCommentError] = useState<string | null>(null)
   const [submittingComment, setSubmittingComment] = useState(false)
+
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [replyError, setReplyError] = useState<string | null>(null)
+  const [submittingReply, setSubmittingReply] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -102,6 +136,43 @@ function PostViewForPost({ postId }: { postId: string }) {
     setComments(updatedComments)
   }
 
+  function startReply(commentId: string) {
+    setReplyingTo(commentId)
+    setReplyText('')
+    setReplyError(null)
+  }
+
+  function cancelReply() {
+    setReplyingTo(null)
+    setReplyText('')
+    setReplyError(null)
+  }
+
+  async function handleReplySubmit(event: FormEvent<HTMLFormElement>, parentId: string) {
+    event.preventDefault()
+    if (!profile) return
+    setReplyError(null)
+
+    const trimmed = replyText.trim()
+    if (trimmed.length === 0 || trimmed.length > 8192) {
+      setReplyError('Reply must be 1-8192 characters.')
+      return
+    }
+
+    setSubmittingReply(true)
+    const { error } = await createComment(postId, profile.id, trimmed, parentId)
+    setSubmittingReply(false)
+
+    if (error) {
+      setReplyError(error.message)
+      return
+    }
+
+    cancelReply()
+    const updatedComments = await getComments(postId)
+    setComments(updatedComments)
+  }
+
   if (loading) {
     return (
       <section id="post-view-page">
@@ -122,31 +193,53 @@ function PostViewForPost({ postId }: { postId: string }) {
   const canVote = !!profile && !profile.is_blocked && !isOwnPost
   const canComment = !!profile && !profile.is_blocked
 
+  const topLevelComments = comments.filter((comment) => !comment.parentCommentId)
+  const repliesByParent = new Map<string, CommentItem[]>()
+  for (const comment of comments) {
+    if (comment.parentCommentId) {
+      const list = repliesByParent.get(comment.parentCommentId) ?? []
+      list.push(comment)
+      repliesByParent.set(comment.parentCommentId, list)
+    }
+  }
+
   return (
     <section id="post-view-page">
       <article id="post-view">
         <div className="post-author-card">
-          <AuthorAvatar author={post.author} />
-          <div>
-            <div className="post-author-name">
-              {post.author.firstName} {post.author.lastName}
+          <div className="post-author-top">
+            <AuthorAvatar author={post.author} />
+            <div>
+              <div className="post-author-name">
+                {post.author.firstName} {post.author.lastName}
+              </div>
+              <div className="post-author-username">@{post.author.username}</div>
             </div>
-            <div className="post-author-username">@{post.author.username}</div>
-            {post.authorBadges.length > 0 && (
-              <ul className="badge-list">
-                {post.authorBadges.map((badge) => (
-                  <li key={badge.id} title={badge.description}>
-                    {badge.name}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
+          {post.authorBadges.length > 0 && (
+            <ul className="badge-list">
+              {post.authorBadges.map((badge) => (
+                <li key={badge.id} title={badge.description}>
+                  {badge.name}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <h1>{post.title}</h1>
         <p className="post-view-meta">{formatDateTime(post.createdAt)}</p>
         <div className="post-view-content">{post.content}</div>
+
+        {post.tags.length > 0 && (
+          <ul className="tag-list">
+            {post.tags.map((tag) => (
+              <li key={tag} className="tag-pill">
+                {tag}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div id="post-votes">
           <button
@@ -183,20 +276,50 @@ function PostViewForPost({ postId }: { postId: string }) {
         <section id="post-comments">
           <h2>Comments ({comments.length})</h2>
 
-          {comments.length === 0 ? (
+          {topLevelComments.length === 0 ? (
             <p>No comments yet.</p>
           ) : (
             <ul id="comment-list">
-              {comments.map((comment) => (
+              {topLevelComments.map((comment) => (
                 <li key={comment.id} className="comment-item">
-                  <AuthorAvatar author={comment.author} />
-                  <div>
-                    <div className="comment-meta">
-                      <span className="comment-author">{comment.author.username}</span>
-                      <span className="comment-date">{formatDateTime(comment.createdAt)}</span>
-                    </div>
-                    <p className="comment-content">{comment.content}</p>
-                  </div>
+                  <CommentBody comment={comment} />
+
+                  {canComment &&
+                    (replyingTo === comment.id ? (
+                      <form className="reply-form" onSubmit={(event) => handleReplySubmit(event, comment.id)}>
+                        <textarea
+                          value={replyText}
+                          onChange={(event) => setReplyText(event.target.value)}
+                          placeholder={`Reply to ${comment.author.username}…`}
+                          rows={2}
+                          maxLength={8192}
+                          autoFocus
+                        />
+                        {replyError && <p className="auth-form-error">{replyError}</p>}
+                        <div className="reply-form-actions">
+                          <button type="submit" className="button primary" disabled={submittingReply}>
+                            {submittingReply ? 'Replying…' : 'Reply'}
+                          </button>
+                          <button type="button" onClick={cancelReply}>
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <button type="button" className="comment-reply-toggle" onClick={() => startReply(comment.id)}>
+                        Reply
+                      </button>
+                    ))}
+
+                  {(repliesByParent.get(comment.id) ?? []).length > 0 && (
+                    <ul className="comment-replies">
+                      {repliesByParent.get(comment.id)!.map((reply) => (
+                        <li key={reply.id} className="comment-item comment-reply">
+                          <CommentBody comment={reply} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import { getPublicProfiles } from './publicProfiles'
 import type { PublicProfile } from './publicProfiles'
+import { getTagsForPost } from './tags'
 
 export interface Badge {
   id: string
@@ -18,6 +19,7 @@ export interface PostDetail {
   downvoteCount: number
   author: PublicProfile
   authorBadges: Badge[]
+  tags: string[]
   myVote: 1 | -1 | null
 }
 
@@ -26,17 +28,40 @@ export interface CommentItem {
   content: string
   createdAt: string
   author: PublicProfile
+  badges: Badge[]
+  parentCommentId: string | null
 }
 
-async function getBadgesForUser(userId: string): Promise<Badge[]> {
-  const { data: userBadgeRows } = await supabase.from('user_badges').select('badge_id').eq('user_id', userId)
+const UNKNOWN_AUTHOR: PublicProfile = {
+  id: '',
+  username: 'unknown',
+  firstName: '',
+  lastName: '',
+  avatarUrl: null,
+  reputation: 0,
+}
 
-  const badgeIds = (userBadgeRows ?? []).map((row) => row.badge_id)
-  if (badgeIds.length === 0) return []
+async function getBadgesForUsers(userIds: string[]): Promise<Map<string, Badge[]>> {
+  const map = new Map<string, Badge[]>()
+  if (userIds.length === 0) return map
+
+  const { data: userBadgeRows } = await supabase.from('user_badges').select('user_id, badge_id').in('user_id', userIds)
+
+  const badgeIds = [...new Set((userBadgeRows ?? []).map((row) => row.badge_id))]
+  if (badgeIds.length === 0) return map
 
   const { data: badgeRows } = await supabase.from('badges').select('id, code, name, description').in('id', badgeIds)
+  const badgeById = new Map((badgeRows ?? []).map((badge) => [badge.id, badge]))
 
-  return badgeRows ?? []
+  for (const row of userBadgeRows ?? []) {
+    const badge = badgeById.get(row.badge_id)
+    if (!badge) continue
+    const list = map.get(row.user_id) ?? []
+    list.push(badge)
+    map.set(row.user_id, list)
+  }
+
+  return map
 }
 
 export async function getPostDetail(postId: string, viewerId: string | null): Promise<PostDetail | null> {
@@ -50,9 +75,10 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
 
   // Independent of each other - fetch them concurrently rather than in
   // series, since each one is its own network round trip.
-  const [profiles, authorBadges, voteRow] = await Promise.all([
+  const [profiles, badgesByUser, tags, voteRow] = await Promise.all([
     getPublicProfiles([post.author_id]),
-    getBadgesForUser(post.author_id),
+    getBadgesForUsers([post.author_id]),
+    getTagsForPost(postId),
     viewerId
       ? supabase.from('votes').select('value').eq('post_id', postId).eq('voter_id', viewerId).maybeSingle()
       : Promise.resolve(null),
@@ -62,14 +88,7 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
   // the profile is otherwise gone) - not that the post itself is missing, so
   // fall back to a placeholder instead of reporting the whole post as 404,
   // same as getComments() below does for comment authors.
-  const author = profiles.get(post.author_id) ?? {
-    id: post.author_id,
-    username: 'unknown',
-    firstName: '',
-    lastName: '',
-    avatarUrl: null,
-    reputation: 0,
-  }
+  const author = profiles.get(post.author_id) ?? { ...UNKNOWN_AUTHOR, id: post.author_id }
 
   const myVote = (voteRow?.data?.value as 1 | -1 | undefined) ?? null
 
@@ -81,7 +100,8 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
     upvoteCount: post.like_count,
     downvoteCount: post.dislike_count,
     author,
-    authorBadges,
+    authorBadges: badgesByUser.get(post.author_id) ?? [],
+    tags,
     myVote,
   }
 }
@@ -89,32 +109,27 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
 export async function getComments(postId: string): Promise<CommentItem[]> {
   const { data: comments, error } = await supabase
     .from('comments')
-    .select('id, content, created_at, author_id')
+    .select('id, content, created_at, author_id, parent_comment_id')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
   if (error || !comments) return []
 
   const authorIds = [...new Set(comments.map((comment) => comment.author_id))]
-  const profiles = await getPublicProfiles(authorIds)
+  const [profiles, badgesByUser] = await Promise.all([getPublicProfiles(authorIds), getBadgesForUsers(authorIds)])
 
   return comments.map((comment) => ({
     id: comment.id,
     content: comment.content,
     createdAt: comment.created_at,
-    author: profiles.get(comment.author_id) ?? {
-      id: comment.author_id,
-      username: 'unknown',
-      firstName: '',
-      lastName: '',
-      avatarUrl: null,
-      reputation: 0,
-    },
+    author: profiles.get(comment.author_id) ?? { ...UNKNOWN_AUTHOR, id: comment.author_id },
+    badges: badgesByUser.get(comment.author_id) ?? [],
+    parentCommentId: comment.parent_comment_id,
   }))
 }
 
-export function createComment(postId: string, authorId: string, content: string) {
-  return supabase.from('comments').insert({ post_id: postId, author_id: authorId, content })
+export function createComment(postId: string, authorId: string, content: string, parentCommentId: string | null = null) {
+  return supabase.from('comments').insert({ post_id: postId, author_id: authorId, content, parent_comment_id: parentCommentId })
 }
 
 // One vote per (voter, post): insert if none yet, delete to toggle the same

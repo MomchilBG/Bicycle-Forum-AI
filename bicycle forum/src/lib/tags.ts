@@ -29,3 +29,13 @@ export async function attachTagsToPost(postId: string, tagNames: string[]): Prom
   const { error } = await supabase.from('post_tags').insert(tagIds.map((tagId) => ({ post_id: postId, tag_id: tagId })))
   return { error: error?.message ?? null }
 }
+
+export async function getTagsForPost(postId: string): Promise<string[]> {
+  const { data: postTagRows } = await supabase.from('post_tags').select('tag_id').eq('post_id', postId)
+
+  const tagIds = (postTagRows ?? []).map((row) => row.tag_id)
+  if (tagIds.length === 0) return []
+
+  const { data: tagRows } = await supabase.from('tags').select('name').in('id', tagIds)
+  return (tagRows ?? []).map((row) => row.name).sort()
+}

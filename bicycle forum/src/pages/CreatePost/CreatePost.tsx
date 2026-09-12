@@ -163,7 +163,10 @@ function CreatePost() {
                 <li key={tag} className="tag-bubble">
                   <span>{tag}</span>
                   <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`}>
-                    ×
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                      <line x1="4" y1="4" x2="20" y2="20" />
+                      <line x1="20" y1="4" x2="4" y2="20" />
+                    </svg>
                   </button>
                 </li>
               ))}

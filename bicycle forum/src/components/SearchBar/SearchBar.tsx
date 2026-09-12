@@ -19,7 +19,7 @@ function SearchBar() {
         type="search"
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder="Search posts or #tags"
+        placeholder="Search posts or #tag_name"
         aria-label="Search posts"
       />
       <button type="submit" aria-label="Search">

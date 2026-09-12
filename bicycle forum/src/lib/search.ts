@@ -9,15 +9,17 @@ export interface ParsedQuery {
   tags: string[]
 }
 
-// "#gravel maintenance" -> { words: ['maintenance'], tags: ['gravel'] },
-// mirroring the same lowercasing the username field uses at registration.
+// "#gravel #mountain_biking maintenance" -> { words: ['maintenance'], tags: ['gravel', 'mountain biking'] }.
+// Underscores stand in for the spaces a multi-word tag can't otherwise
+// express in a space-delimited search box; lowercasing mirrors the username
+// field at registration.
 export function parseSearchQuery(raw: string): ParsedQuery {
   const words: string[] = []
   const tags: string[] = []
 
   for (const token of raw.trim().split(/\s+/).filter(Boolean)) {
     if (token.startsWith('#')) {
-      const tag = token.slice(1).toLowerCase()
+      const tag = token.slice(1).toLowerCase().replace(/_/g, ' ').trim()
       if (tag) tags.push(tag)
     } else {
       words.push(token)

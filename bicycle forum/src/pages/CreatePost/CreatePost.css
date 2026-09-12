@@ -103,13 +103,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 18px;
   height: 18px;
+  padding: 0;
   border: none;
   background: none;
   color: var(--accent);
-  font-size: 15px;
-  line-height: 1;
   cursor: pointer;
   border-radius: 50%;
   opacity: 0;
