@@ -350,6 +350,25 @@ export type Database = {
           username: string
         }[]
       }
+      search_posts: {
+        Args: {
+          page_limit?: number
+          page_offset?: number
+          search_words?: string[]
+          sort_by?: string
+          tag_names?: string[]
+        }
+        Returns: {
+          author_id: string
+          comment_count: number
+          created_at: string
+          dislike_count: number
+          id: string
+          like_count: number
+          title: string
+          total_count: number
+        }[]
+      }
     }
     Enums: {
       user_role: "user" | "admin"

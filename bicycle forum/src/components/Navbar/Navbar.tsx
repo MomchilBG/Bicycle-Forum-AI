@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeContext'
 import { useAuth } from '../../auth/AuthContext'
+import SearchBar from '../SearchBar/SearchBar'
 import './Navbar.css'
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
@@ -38,6 +39,7 @@ function Navbar() {
           </>
         )}
       </nav>
+      {profile && <SearchBar />}
       {profile && (
         <NavLink to="/profile" id="nav-avatar" aria-label="Your profile" className={navLinkClass}>
           {profile.avatar_url ? (

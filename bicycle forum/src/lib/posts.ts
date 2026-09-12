@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { getPublicProfiles } from './publicProfiles'
 
 export interface PostSummary {
   id: string
@@ -6,6 +7,9 @@ export interface PostSummary {
   author: string
   commentCount: number
   createdAt: string
+  // Only populated by callers that already have upvote/downvote counts
+  // (currently the search/browse results) - undefined elsewhere.
+  score?: number
 }
 
 export interface PlatformStats {
@@ -40,14 +44,12 @@ async function getPosts(orderBy: 'comment_count' | 'created_at', limit: number):
   // author display names come from the public_profiles() function, which
   // only exposes the safe, non-sensitive columns.
   const authorIds = [...new Set(posts.map((post) => post.author_id))]
-  const { data: authors } = await supabase.rpc('public_profiles').in('id', authorIds)
-
-  const authorNameById = new Map((authors ?? []).map((author) => [author.id, author.username]))
+  const profiles = await getPublicProfiles(authorIds)
 
   return (posts as PostRow[]).map((post) => ({
     id: post.id,
     title: post.title,
-    author: authorNameById.get(post.author_id) ?? 'Unknown',
+    author: profiles.get(post.author_id)?.username ?? 'Unknown',
     commentCount: post.comment_count,
     createdAt: post.created_at,
   }))

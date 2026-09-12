@@ -10,7 +10,8 @@ function PostSummaryCard({ post }: { post: PostSummary }) {
         {post.title}
       </Link>
       <span className="post-meta">
-        by {post.author} · {post.commentCount} comments · {formatDateTime(post.createdAt)}
+        by {post.author} · {post.commentCount} comments
+        {post.score !== undefined && ` · ${post.score} score`} · {formatDateTime(post.createdAt)}
       </span>
     </li>
   )

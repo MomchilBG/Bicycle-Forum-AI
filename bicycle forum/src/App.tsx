@@ -7,6 +7,7 @@ import Register from './pages/Register/Register'
 import Profile from './pages/Profile/Profile'
 import CreatePost from './pages/CreatePost/CreatePost'
 import PostView from './pages/PostView/PostView'
+import PostsBrowse from './pages/PostsBrowse/PostsBrowse'
 import NotFound from './pages/NotFound/NotFound'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route element={<RequireAuth />}>
           <Route path="/profile" element={<Profile />} />
           <Route path="/posts/new" element={<CreatePost />} />
+          <Route path="/posts" element={<PostsBrowse />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>
