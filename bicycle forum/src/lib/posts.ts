@@ -60,3 +60,27 @@ export function getMostCommentedPosts(limit = 10): Promise<PostSummary[]> {
 export function getMostRecentPosts(limit = 10): Promise<PostSummary[]> {
   return getPosts('created_at', limit)
 }
+
+// The caller already knows their own username, so this skips the
+// public_profiles() round trip that getPosts() needs for other people's posts.
+export async function getPostsByAuthor(authorId: string, authorUsername: string): Promise<PostSummary[]> {
+  const { data: posts, error } = await supabase
+    .from('posts')
+    .select('id, title, created_at, comment_count, author_id')
+    .eq('author_id', authorId)
+    .order('created_at', { ascending: false })
+
+  if (error || !posts) return []
+
+  return (posts as PostRow[]).map((post) => ({
+    id: post.id,
+    title: post.title,
+    author: authorUsername,
+    commentCount: post.comment_count,
+    createdAt: post.created_at,
+  }))
+}
+
+export async function createPost(authorId: string, title: string, content: string) {
+  return supabase.from('posts').insert({ author_id: authorId, title, content }).select('id').single()
+}

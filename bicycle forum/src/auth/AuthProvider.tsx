@@ -51,6 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [userId])
 
+  // Lets pages that just wrote to `profiles` (name/avatar edits) pull the
+  // fresh row without waiting for a full page reload.
+  const refreshProfile = async () => {
+    if (!userId) return
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    setProfileState({ userId, profile: data })
+  }
+
   // Falls back to null both when signed out and during the brief window
   // after switching users, before that user's profile fetch resolves -
   // avoids ever showing a stale profile from a previous session.
@@ -61,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut }}>
+    <AuthContext.Provider
+      value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}
+    >
       {children}
     </AuthContext.Provider>
   )

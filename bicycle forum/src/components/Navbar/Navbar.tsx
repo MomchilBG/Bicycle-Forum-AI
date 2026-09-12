@@ -23,7 +23,14 @@ function Navbar() {
         </NavLink>
         {profile ? (
           <>
-            <span id="nav-username">{profile.username}</span>
+            {!profile.is_blocked && (
+              <NavLink to="/posts/new" className={navLinkClass}>
+                New post
+              </NavLink>
+            )}
+            <NavLink to="/profile" id="nav-username" className={navLinkClass}>
+              {profile.username}
+            </NavLink>
             <button type="button" onClick={() => void signOut()}>
               Log out
             </button>

@@ -1,0 +1,147 @@
+#profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px 32px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+
+  @media (max-width: 1024px) {
+    padding: 24px 20px;
+    gap: 24px;
+  }
+}
+
+#profile-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  @media (max-width: 480px) {
+    gap: 16px;
+  }
+}
+
+#profile-header h1 {
+  margin: 0;
+}
+
+#profile-subtitle {
+  margin: 4px 0 12px;
+  color: var(--text);
+  font-size: 15px;
+}
+
+#profile-header button {
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+#profile-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 480px) {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+#profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#profile-avatar-fallback {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+#profile-panels {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.profile-card h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.profile-card button.button.primary {
+  align-self: flex-start;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+}
+
+.profile-card button.button.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#profile-posts {
+  text-align: left;
+}
+
+#profile-posts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+#profile-posts-header h2 {
+  margin: 0;
+}
+
+#profile-posts ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

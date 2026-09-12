@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
+import { useAuth } from '../../auth/AuthContext'
 import { getMostCommentedPosts, getMostRecentPosts, getPlatformStats } from '../../lib/posts'
 import type { PlatformStats, PostSummary } from '../../lib/posts'
 import './Home.css'
@@ -13,6 +14,7 @@ const features = [
 ]
 
 function Home() {
+  const { user } = useAuth()
   const [stats, setStats] = useState<PlatformStats>({ userCount: 0, postCount: 0 })
   const [mostCommented, setMostCommented] = useState<PostSummary[]>([])
   const [mostRecent, setMostRecent] = useState<PostSummary[]>([])
@@ -51,14 +53,16 @@ function Home() {
             <span>posts created</span>
           </div>
         </div>
-        <div id="hero-cta">
-          <Link to="/register" className="button primary">
-            Join the forum
-          </Link>
-          <Link to="/login" className="button">
-            Log in
-          </Link>
-        </div>
+        {!user && (
+          <div id="hero-cta">
+            <Link to="/register" className="button primary">
+              Join the forum
+            </Link>
+            <Link to="/login" className="button">
+              Log in
+            </Link>
+          </div>
+        )}
       </section>
 
       <section id="features">
