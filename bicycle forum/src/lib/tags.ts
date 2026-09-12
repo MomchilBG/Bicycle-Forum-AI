@@ -1,0 +1,31 @@
+import { supabase } from './supabaseClient'
+
+async function getOrCreateTagId(name: string): Promise<{ id: string | null; error: string | null }> {
+  const { data: existing } = await supabase.from('tags').select('id').eq('name', name).maybeSingle()
+  if (existing) return { id: existing.id, error: null }
+
+  const { data: created, error } = await supabase.from('tags').insert({ name }).select('id').single()
+  if (!error) return { id: created.id, error: null }
+
+  // Race: someone else created the same tag between our lookup and insert -
+  // look it up again instead of treating the unique-constraint hit as a failure.
+  const { data: retry } = await supabase.from('tags').select('id').eq('name', name).maybeSingle()
+  if (retry) return { id: retry.id, error: null }
+
+  return { id: null, error: error.message }
+}
+
+export async function attachTagsToPost(postId: string, tagNames: string[]): Promise<{ error: string | null }> {
+  const tagIds: string[] = []
+
+  for (const name of tagNames) {
+    const { id, error } = await getOrCreateTagId(name)
+    if (!id) return { error: `Couldn't save tag "${name}": ${error}` }
+    tagIds.push(id)
+  }
+
+  if (tagIds.length === 0) return { error: null }
+
+  const { error } = await supabase.from('post_tags').insert(tagIds.map((tagId) => ({ post_id: postId, tag_id: tagId })))
+  return { error: error?.message ?? null }
+}

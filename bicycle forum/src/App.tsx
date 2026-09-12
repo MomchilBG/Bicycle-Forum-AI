@@ -7,6 +7,7 @@ import Register from './pages/Register/Register'
 import Profile from './pages/Profile/Profile'
 import CreatePost from './pages/CreatePost/CreatePost'
 import PostView from './pages/PostView/PostView'
+import NotFound from './pages/NotFound/NotFound'
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/posts/new" element={<CreatePost />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   )
