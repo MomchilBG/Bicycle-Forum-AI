@@ -24,7 +24,7 @@ function Navbar() {
         </NavLink>
         {profile ? (
           <>
-            <NavLink to="/posts" className={navLinkClass}>
+            <NavLink to="/posts" end className={navLinkClass}>
               Posts
             </NavLink>
             {!profile.is_blocked && (
