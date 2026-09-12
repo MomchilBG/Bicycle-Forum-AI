@@ -18,13 +18,25 @@ function CreatePost() {
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (profile?.is_blocked) {
+  // profile lags session by one fetch - guard against submitting before it
+  // resolves, rather than force-unwrapping it below.
+  if (!profile) {
+    return (
+      <section id="create-post-page">
+        <p>Loading…</p>
+      </section>
+    )
+  }
+
+  if (profile.is_blocked) {
     return (
       <section id="create-post-page">
         <p className="auth-form-error">Your account has been blocked from posting.</p>
       </section>
     )
   }
+
+  const authorId = profile.id
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -43,7 +55,7 @@ function CreatePost() {
     }
 
     setSubmitting(true)
-    const { error } = await createPost(profile!.id, trimmedTitle, trimmedContent)
+    const { error } = await createPost(authorId, trimmedTitle, trimmedContent)
     setSubmitting(false)
 
     if (error) {

@@ -128,12 +128,12 @@ function Register() {
     if (error) {
       if (error.message.toLowerCase().includes('already registered')) {
         setFormError('This email is already registered.')
-      } else if (error.message.includes('profiles_username_key')) {
-        // Rare race: someone else took the username between the check above
-        // and this insert.
-        setUsernameTakenError('This username is already taken.')
       } else if (error.message.toLowerCase().includes('database error')) {
-        setFormError('Something went wrong creating your account. Please try again.')
+        // signUp() masks the real cause behind this generic message (see the
+        // comment on the availability check above) - the likeliest one at
+        // this point is someone else taking the username in the race window
+        // between that check and this insert.
+        setFormError('Something went wrong creating your account. If your username was just taken, try a different one.')
       } else {
         setFormError(error.message)
       }

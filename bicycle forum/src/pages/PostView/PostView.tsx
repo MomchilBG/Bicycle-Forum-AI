@@ -33,6 +33,7 @@ function PostViewForPost({ postId }: { postId: string }) {
   const [notFound, setNotFound] = useState(false)
 
   const [voting, setVoting] = useState(false)
+  const [voteError, setVoteError] = useState<string | null>(null)
   const [commentText, setCommentText] = useState('')
   const [commentError, setCommentError] = useState<string | null>(null)
   const [submittingComment, setSubmittingComment] = useState(false)
@@ -63,7 +64,15 @@ function PostViewForPost({ postId }: { postId: string }) {
   async function handleVote(value: 1 | -1) {
     if (!user || voting) return
     setVoting(true)
-    await castVote(postId, user.id, value)
+    setVoteError(null)
+
+    const { error } = await castVote(postId, user.id, value)
+    if (error) {
+      setVoteError(error.message)
+      setVoting(false)
+      return
+    }
+
     await refreshPost()
     setVoting(false)
   }
@@ -168,6 +177,7 @@ function PostViewForPost({ postId }: { postId: string }) {
             ▼
           </button>
           {!user && <span className="post-view-hint">Log in to vote.</span>}
+          {voteError && <span className="auth-error">{voteError}</span>}
         </div>
 
         <section id="post-comments">

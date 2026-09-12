@@ -83,8 +83,18 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
       : Promise.resolve(null),
   ])
 
-  const author = profiles.get(post.author_id)
-  if (!author) return null
+  // A missing profile here means the author lookup failed transiently (or
+  // the profile is otherwise gone) - not that the post itself is missing, so
+  // fall back to a placeholder instead of reporting the whole post as 404,
+  // same as getComments() below does for comment authors.
+  const author = profiles.get(post.author_id) ?? {
+    id: post.author_id,
+    username: 'unknown',
+    firstName: '',
+    lastName: '',
+    avatarUrl: null,
+    reputation: 0,
+  }
 
   const myVote = (voteRow?.data?.value as 1 | -1 | undefined) ?? null
 
