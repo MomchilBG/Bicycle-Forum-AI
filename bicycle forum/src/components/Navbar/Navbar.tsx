@@ -9,7 +9,7 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme()
-  const { profile, signOut } = useAuth()
+  const { profile } = useAuth()
   const isDark = theme === 'dark' || (theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   return (
@@ -22,19 +22,11 @@ function Navbar() {
           Home
         </NavLink>
         {profile ? (
-          <>
-            {!profile.is_blocked && (
-              <NavLink to="/posts/new" className={navLinkClass}>
-                New post
-              </NavLink>
-            )}
-            <NavLink to="/profile" id="nav-username" className={navLinkClass}>
-              {profile.username}
+          !profile.is_blocked && (
+            <NavLink to="/posts/new" className={navLinkClass}>
+              New post
             </NavLink>
-            <button type="button" onClick={() => void signOut()}>
-              Log out
-            </button>
-          </>
+          )
         ) : (
           <>
             <NavLink to="/login" className={navLinkClass}>
@@ -46,6 +38,15 @@ function Navbar() {
           </>
         )}
       </nav>
+      {profile && (
+        <NavLink to="/profile" id="nav-avatar" aria-label="Your profile" className={navLinkClass}>
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt="" />
+          ) : (
+            <span id="nav-avatar-fallback">{profile.username.slice(0, 1).toUpperCase()}</span>
+          )}
+        </NavLink>
+      )}
       <button
         type="button"
         id="theme-toggle"

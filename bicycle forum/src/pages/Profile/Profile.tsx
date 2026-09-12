@@ -21,7 +21,7 @@ function Profile() {
 // Split out so `profile` is guaranteed non-null on mount - lets the name
 // fields initialize from it directly instead of syncing in via an effect.
 function ProfileContent({ profile }: { profile: ProfileRow }) {
-  const { refreshProfile } = useAuth()
+  const { refreshProfile, signOut } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [firstName, setFirstName] = useState(profile.first_name)
@@ -136,24 +136,32 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
   return (
     <section id="profile-page">
       <div id="profile-header">
-        <div id="profile-avatar">
+        <button
+          type="button"
+          id="profile-avatar"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingAvatar}
+          aria-label="Change profile photo"
+          title="Change profile photo"
+        >
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" />
           ) : (
             <span id="profile-avatar-fallback">{profile.username.slice(0, 1).toUpperCase()}</span>
           )}
-        </div>
-        <div>
+          <span id="profile-avatar-overlay">{uploadingAvatar ? 'Uploading…' : 'Change photo'}</span>
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} hidden />
+        <div id="profile-identity">
           <h1>{profile.username}</h1>
           <p id="profile-subtitle">
             {profile.first_name} {profile.last_name} · {profile.reputation} reputation
           </p>
-          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
-            {uploadingAvatar ? 'Uploading…' : 'Change photo'}
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} hidden />
           {avatarError && <span className="auth-error">{avatarError}</span>}
         </div>
+        <button type="button" id="profile-logout" onClick={() => void signOut()}>
+          Log out
+        </button>
       </div>
 
       <div id="profile-panels">

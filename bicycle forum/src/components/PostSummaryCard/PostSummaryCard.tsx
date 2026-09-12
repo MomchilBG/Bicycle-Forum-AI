@@ -1,4 +1,5 @@
 import type { PostSummary } from '../../lib/posts'
+import { formatDateTime } from '../../lib/formatDate'
 import './PostSummaryCard.css'
 
 function PostSummaryCard({ post }: { post: PostSummary }) {
@@ -6,7 +7,7 @@ function PostSummaryCard({ post }: { post: PostSummary }) {
     <li className="post-summary-card">
       <span className="post-title">{post.title}</span>
       <span className="post-meta">
-        by {post.author} · {post.commentCount} comments · {post.createdAt}
+        by {post.author} · {post.commentCount} comments · {formatDateTime(post.createdAt)}
       </span>
     </li>
   )
