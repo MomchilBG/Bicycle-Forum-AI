@@ -44,3 +44,13 @@ export async function getTagsForPost(postId: string): Promise<string[]> {
   const { data: tagRows } = await supabase.from('tags').select('name').in('id', tagIds)
   return (tagRows ?? []).map((row) => row.name).sort()
 }
+
+// Editing a post's tags: simplest correct approach is to clear the existing
+// links and reattach the new list, rather than diffing old vs new - post tag
+// lists are small, so the extra round trip isn't a real cost.
+export async function replacePostTags(postId: string, tagNames: string[]): Promise<{ error: string | null }> {
+  const { error: deleteError } = await supabase.from('post_tags').delete().eq('post_id', postId)
+  if (deleteError) return { error: deleteError.message }
+
+  return attachTagsToPost(postId, tagNames)
+}

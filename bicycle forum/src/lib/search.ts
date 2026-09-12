@@ -29,6 +29,13 @@ export function parseSearchQuery(raw: string): ParsedQuery {
   return { words, tags }
 }
 
+// Inverse of parseSearchQuery's tag handling - builds the /posts?q=... link
+// a tag pill navigates to when clicked.
+export function tagSearchHref(tagName: string): string {
+  const query = `#${tagName.trim().replace(/\s+/g, '_')}`
+  return `/posts?q=${encodeURIComponent(query)}`
+}
+
 export const SEARCH_PAGE_SIZE = 20
 
 export interface SearchPostsResult {

@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import { castVote, createComment, getComments, getPostDetail } from '../../lib/postDetail'
+import {
+  castVote,
+  createComment,
+  deleteComment,
+  getComments,
+  getPostDetail,
+  updateComment,
+} from '../../lib/postDetail'
 import type { Badge, CommentItem, PostDetail } from '../../lib/postDetail'
+import { deletePost } from '../../lib/posts'
+import { tagSearchHref } from '../../lib/search'
 import { formatDateTime } from '../../lib/formatDate'
 import '../auth.css'
 import './PostView.css'
@@ -29,7 +38,41 @@ function CommentBadges({ badges }: { badges: Badge[] }) {
   )
 }
 
-function CommentBody({ comment }: { comment: CommentItem }) {
+interface CommentBodyProps {
+  comment: CommentItem
+  isOwn: boolean
+  canReply: boolean
+  isEditing: boolean
+  editText: string
+  editError: string | null
+  savingEdit: boolean
+  isDeleting: boolean
+  onStartReply: () => void
+  onStartEdit: () => void
+  onCancelEdit: () => void
+  onEditTextChange: (value: string) => void
+  onEditSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onDelete: () => void
+}
+
+function CommentBody({
+  comment,
+  isOwn,
+  canReply,
+  isEditing,
+  editText,
+  editError,
+  savingEdit,
+  isDeleting,
+  onStartReply,
+  onStartEdit,
+  onCancelEdit,
+  onEditTextChange,
+  onEditSubmit,
+  onDelete,
+}: CommentBodyProps) {
+  const wasEdited = comment.updatedAt !== comment.createdAt
+
   return (
     <div className="comment-row">
       <AuthorAvatar author={comment.author} />
@@ -37,9 +80,53 @@ function CommentBody({ comment }: { comment: CommentItem }) {
         <div className="comment-meta">
           <span className="comment-author">{comment.author.username}</span>
           <CommentBadges badges={comment.badges} />
-          <span className="comment-date">{formatDateTime(comment.createdAt)}</span>
+          <span className="comment-date">
+            {formatDateTime(comment.createdAt)}
+            {wasEdited && ' (edited)'}
+          </span>
         </div>
-        <p className="comment-content">{comment.content}</p>
+
+        {isEditing ? (
+          <form className="comment-edit-form" onSubmit={onEditSubmit}>
+            <textarea
+              value={editText}
+              onChange={(event) => onEditTextChange(event.target.value)}
+              rows={3}
+              maxLength={8192}
+              autoFocus
+            />
+            {editError && <p className="auth-form-error">{editError}</p>}
+            <div className="comment-edit-actions">
+              <button type="submit" className="button primary" disabled={savingEdit}>
+                {savingEdit ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" onClick={onCancelEdit}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <p className="comment-content">{comment.content}</p>
+            <div className="comment-actions">
+              {canReply && (
+                <button type="button" className="action-link" onClick={onStartReply}>
+                  Reply
+                </button>
+              )}
+              {isOwn && (
+                <>
+                  <button type="button" className="action-link" onClick={onStartEdit}>
+                    Edit
+                  </button>
+                  <button type="button" className="action-link danger" onClick={onDelete} disabled={isDeleting}>
+                    {isDeleting ? 'Deleting…' : 'Delete'}
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -54,6 +141,7 @@ function PostView() {
 }
 
 function PostViewForPost({ postId }: { postId: string }) {
+  const navigate = useNavigate()
   const { profile, user } = useAuth()
 
   const [post, setPost] = useState<PostDetail | null>(null)
@@ -71,6 +159,15 @@ function PostViewForPost({ postId }: { postId: string }) {
   const [replyText, setReplyText] = useState('')
   const [replyError, setReplyError] = useState<string | null>(null)
   const [submittingReply, setSubmittingReply] = useState(false)
+
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+
+  const [deletingPost, setDeletingPost] = useState(false)
+  const [postActionError, setPostActionError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -95,6 +192,11 @@ function PostViewForPost({ postId }: { postId: string }) {
     setPost(result)
   }
 
+  async function refreshComments() {
+    const updated = await getComments(postId)
+    setComments(updated)
+  }
+
   async function handleVote(value: 1 | -1) {
     if (!user || voting) return
     setVoting(true)
@@ -109,6 +211,22 @@ function PostViewForPost({ postId }: { postId: string }) {
 
     await refreshPost()
     setVoting(false)
+  }
+
+  async function handleDeletePost() {
+    if (!window.confirm('Delete this post? This cannot be undone.')) return
+    setDeletingPost(true)
+    setPostActionError(null)
+
+    const { error } = await deletePost(postId)
+    setDeletingPost(false)
+
+    if (error) {
+      setPostActionError(error.message)
+      return
+    }
+
+    navigate('/profile')
   }
 
   async function handleCommentSubmit(event: FormEvent<HTMLFormElement>) {
@@ -132,8 +250,7 @@ function PostViewForPost({ postId }: { postId: string }) {
     }
 
     setCommentText('')
-    const updatedComments = await getComments(postId)
-    setComments(updatedComments)
+    await refreshComments()
   }
 
   function startReply(commentId: string) {
@@ -169,8 +286,57 @@ function PostViewForPost({ postId }: { postId: string }) {
     }
 
     cancelReply()
-    const updatedComments = await getComments(postId)
-    setComments(updatedComments)
+    await refreshComments()
+  }
+
+  function startEditComment(comment: CommentItem) {
+    setEditingCommentId(comment.id)
+    setEditText(comment.content)
+    setEditError(null)
+  }
+
+  function cancelEditComment() {
+    setEditingCommentId(null)
+    setEditText('')
+    setEditError(null)
+  }
+
+  async function handleEditCommentSubmit(event: FormEvent<HTMLFormElement>, commentId: string) {
+    event.preventDefault()
+    setEditError(null)
+
+    const trimmed = editText.trim()
+    if (trimmed.length === 0 || trimmed.length > 8192) {
+      setEditError('Comment must be 1-8192 characters.')
+      return
+    }
+
+    setSavingEdit(true)
+    const { error } = await updateComment(commentId, trimmed)
+    setSavingEdit(false)
+
+    if (error) {
+      setEditError(error.message)
+      return
+    }
+
+    cancelEditComment()
+    await refreshComments()
+  }
+
+  async function handleDeleteComment(commentId: string) {
+    if (!window.confirm('Delete this comment? This cannot be undone.')) return
+    setDeletingCommentId(commentId)
+
+    const { error } = await deleteComment(commentId)
+    setDeletingCommentId(null)
+
+    if (error) {
+      setCommentError(error.message)
+      return
+    }
+
+    await refreshComments()
   }
 
   if (loading) {
@@ -203,6 +369,27 @@ function PostViewForPost({ postId }: { postId: string }) {
     }
   }
 
+  function renderCommentBody(comment: CommentItem, canReply: boolean) {
+    return (
+      <CommentBody
+        comment={comment}
+        isOwn={profile?.id === comment.author.id}
+        canReply={canReply && canComment}
+        isEditing={editingCommentId === comment.id}
+        editText={editText}
+        editError={editError}
+        savingEdit={savingEdit}
+        isDeleting={deletingCommentId === comment.id}
+        onStartReply={() => startReply(comment.id)}
+        onStartEdit={() => startEditComment(comment)}
+        onCancelEdit={cancelEditComment}
+        onEditTextChange={setEditText}
+        onEditSubmit={(event) => handleEditCommentSubmit(event, comment.id)}
+        onDelete={() => handleDeleteComment(comment.id)}
+      />
+    )
+  }
+
   return (
     <section id="post-view-page">
       <article id="post-view">
@@ -228,18 +415,35 @@ function PostViewForPost({ postId }: { postId: string }) {
         </div>
 
         <h1>{post.title}</h1>
-        <p className="post-view-meta">{formatDateTime(post.createdAt)}</p>
+        <p className="post-view-meta">
+          {formatDateTime(post.createdAt)}
+          {post.updatedAt !== post.createdAt && ' (edited)'}
+        </p>
         <div className="post-view-content">{post.content}</div>
 
         {post.tags.length > 0 && (
           <ul className="tag-list">
             {post.tags.map((tag) => (
-              <li key={tag} className="tag-pill">
-                {tag}
+              <li key={tag}>
+                <Link to={tagSearchHref(tag)} className="tag-pill">
+                  {tag}
+                </Link>
               </li>
             ))}
           </ul>
         )}
+
+        {isOwnPost && (
+          <div id="post-actions">
+            <Link to={`/posts/${postId}/edit`} className="action-link">
+              Edit
+            </Link>
+            <button type="button" className="action-link danger" onClick={handleDeletePost} disabled={deletingPost}>
+              {deletingPost ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
+        )}
+        {postActionError && <p className="auth-form-error">{postActionError}</p>}
 
         <div id="post-votes">
           <button
@@ -282,9 +486,9 @@ function PostViewForPost({ postId }: { postId: string }) {
             <ul id="comment-list">
               {topLevelComments.map((comment) => (
                 <li key={comment.id} className="comment-item">
-                  <CommentBody comment={comment} />
+                  {renderCommentBody(comment, true)}
 
-                  {canComment &&
+                  {editingCommentId !== comment.id &&
                     (replyingTo === comment.id ? (
                       <form className="reply-form" onSubmit={(event) => handleReplySubmit(event, comment.id)}>
                         <textarea
@@ -305,17 +509,13 @@ function PostViewForPost({ postId }: { postId: string }) {
                           </button>
                         </div>
                       </form>
-                    ) : (
-                      <button type="button" className="comment-reply-toggle" onClick={() => startReply(comment.id)}>
-                        Reply
-                      </button>
-                    ))}
+                    ) : null)}
 
                   {(repliesByParent.get(comment.id) ?? []).length > 0 && (
                     <ul className="comment-replies">
                       {repliesByParent.get(comment.id)!.map((reply) => (
                         <li key={reply.id} className="comment-item comment-reply">
-                          <CommentBody comment={reply} />
+                          {renderCommentBody(reply, false)}
                         </li>
                       ))}
                     </ul>

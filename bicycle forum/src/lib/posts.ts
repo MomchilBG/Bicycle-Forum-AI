@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { getPublicProfiles } from './publicProfiles'
+import { getTagsForPost } from './tags'
 
 export interface PostSummary {
   id: string
@@ -85,4 +86,33 @@ export async function getPostsByAuthor(authorId: string, authorUsername: string)
 
 export async function createPost(authorId: string, title: string, content: string) {
   return supabase.from('posts').insert({ author_id: authorId, title, content }).select('id').single()
+}
+
+export interface EditablePost {
+  title: string
+  content: string
+  authorId: string
+  tags: string[]
+}
+
+// Deliberately leaner than getPostDetail() (no author profile, badges, or
+// vote lookup) since an edit form only needs the post's own fields plus its
+// tags.
+export async function getPostForEdit(postId: string): Promise<EditablePost | null> {
+  const [{ data: post, error }, tags] = await Promise.all([
+    supabase.from('posts').select('title, content, author_id').eq('id', postId).single(),
+    getTagsForPost(postId),
+  ])
+
+  if (error || !post) return null
+
+  return { title: post.title, content: post.content, authorId: post.author_id, tags }
+}
+
+export function updatePost(postId: string, title: string, content: string) {
+  return supabase.from('posts').update({ title, content }).eq('id', postId)
+}
+
+export function deletePost(postId: string) {
+  return supabase.from('posts').delete().eq('id', postId)
 }

@@ -10,6 +10,9 @@
   --danger: #d1293d;
   --danger-bg: rgba(209, 41, 61, 0.1);
   --danger-border: rgba(209, 41, 61, 0.5);
+  --badge: #b45309;
+  --badge-bg: rgba(180, 83, 9, 0.12);
+  --badge-border: rgba(180, 83, 9, 0.45);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -27,6 +30,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Always reserve the vertical scrollbar so short pages don't shift width
+     relative to long ones. */
+  overflow-y: scroll;
 
   @media (max-width: 1024px) {
     font-size: 16px;
@@ -46,6 +52,9 @@
     --danger: #f87171;
     --danger-bg: rgba(248, 113, 113, 0.15);
     --danger-border: rgba(248, 113, 113, 0.5);
+    --badge: #fbbf24;
+    --badge-bg: rgba(251, 191, 36, 0.15);
+    --badge-border: rgba(251, 191, 36, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
@@ -64,6 +73,9 @@
   --danger: #f87171;
   --danger-bg: rgba(248, 113, 113, 0.15);
   --danger-border: rgba(248, 113, 113, 0.5);
+  --badge: #fbbf24;
+  --badge-bg: rgba(251, 191, 36, 0.15);
+  --badge-border: rgba(251, 191, 36, 0.5);
   --social-bg: rgba(47, 48, 58, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;

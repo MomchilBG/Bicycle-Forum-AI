@@ -15,6 +15,7 @@ export interface PostDetail {
   title: string
   content: string
   createdAt: string
+  updatedAt: string
   upvoteCount: number
   downvoteCount: number
   author: PublicProfile
@@ -27,6 +28,7 @@ export interface CommentItem {
   id: string
   content: string
   createdAt: string
+  updatedAt: string
   author: PublicProfile
   badges: Badge[]
   parentCommentId: string | null
@@ -67,7 +69,7 @@ async function getBadgesForUsers(userIds: string[]): Promise<Map<string, Badge[]
 export async function getPostDetail(postId: string, viewerId: string | null): Promise<PostDetail | null> {
   const { data: post, error } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, like_count, dislike_count, author_id')
+    .select('id, title, content, created_at, updated_at, like_count, dislike_count, author_id')
     .eq('id', postId)
     .single()
 
@@ -97,6 +99,7 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
     title: post.title,
     content: post.content,
     createdAt: post.created_at,
+    updatedAt: post.updated_at,
     upvoteCount: post.like_count,
     downvoteCount: post.dislike_count,
     author,
@@ -109,7 +112,7 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
 export async function getComments(postId: string): Promise<CommentItem[]> {
   const { data: comments, error } = await supabase
     .from('comments')
-    .select('id, content, created_at, author_id, parent_comment_id')
+    .select('id, content, created_at, updated_at, author_id, parent_comment_id')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
@@ -122,6 +125,7 @@ export async function getComments(postId: string): Promise<CommentItem[]> {
     id: comment.id,
     content: comment.content,
     createdAt: comment.created_at,
+    updatedAt: comment.updated_at,
     author: profiles.get(comment.author_id) ?? { ...UNKNOWN_AUTHOR, id: comment.author_id },
     badges: badgesByUser.get(comment.author_id) ?? [],
     parentCommentId: comment.parent_comment_id,
@@ -130,6 +134,14 @@ export async function getComments(postId: string): Promise<CommentItem[]> {
 
 export function createComment(postId: string, authorId: string, content: string, parentCommentId: string | null = null) {
   return supabase.from('comments').insert({ post_id: postId, author_id: authorId, content, parent_comment_id: parentCommentId })
+}
+
+export function updateComment(commentId: string, content: string) {
+  return supabase.from('comments').update({ content }).eq('id', commentId)
+}
+
+export function deleteComment(commentId: string) {
+  return supabase.from('comments').delete().eq('id', commentId)
 }
 
 // One vote per (voter, post): insert if none yet, delete to toggle the same

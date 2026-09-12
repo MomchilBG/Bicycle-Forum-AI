@@ -23,11 +23,16 @@ function Navbar() {
           Home
         </NavLink>
         {profile ? (
-          !profile.is_blocked && (
-            <NavLink to="/posts/new" className={navLinkClass}>
-              New post
+          <>
+            <NavLink to="/posts" className={navLinkClass}>
+              Posts
             </NavLink>
-          )
+            {!profile.is_blocked && (
+              <NavLink to="/posts/new" className={navLinkClass}>
+                New post
+              </NavLink>
+            )}
+          </>
         ) : (
           <>
             <NavLink to="/login" className={navLinkClass}>

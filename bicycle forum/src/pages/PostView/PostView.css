@@ -65,9 +65,9 @@
 }
 
 .badge-list li {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
+  background: var(--badge-bg);
+  color: var(--badge);
+  border: 1px solid var(--badge-border);
   border-radius: 999px;
   padding: 2px 10px;
   font-size: 12px;
@@ -107,6 +107,7 @@
 }
 
 .tag-pill {
+  display: inline-block;
   background: var(--accent-bg);
   color: var(--accent);
   border: 1px solid var(--accent-border);
@@ -114,6 +115,18 @@
   padding: 4px 12px;
   font-size: 13px;
   font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+}
+
+#post-actions {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 #post-votes {
@@ -250,9 +263,9 @@
 }
 
 .comment-badge-pill {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
+  background: var(--badge-bg);
+  color: var(--badge);
+  border: 1px solid var(--badge-border);
   border-radius: 999px;
   padding: 1px 8px;
   font-size: 11px;
@@ -271,21 +284,63 @@
   white-space: pre-wrap;
 }
 
-.comment-reply-toggle {
-  align-self: flex-start;
-  margin-left: 44px;
+.comment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.action-link {
   border: none;
   background: none;
   padding: 0;
   color: var(--text);
+  font: inherit;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+  text-decoration: none;
 
   &:hover {
     color: var(--accent);
     text-decoration: underline;
   }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+}
+
+.action-link.danger:hover {
+  color: var(--danger);
+}
+
+.comment-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-edit-form textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+}
+
+.comment-edit-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .reply-form {
@@ -316,7 +371,8 @@
   gap: 8px;
 }
 
-.reply-form-actions button.button.primary {
+.reply-form-actions button.button.primary,
+.comment-edit-actions button.button.primary {
   border: none;
   cursor: pointer;
   font: inherit;
@@ -328,7 +384,8 @@
   }
 }
 
-.reply-form-actions button:not(.button) {
+.reply-form-actions button:not(.button),
+.comment-edit-actions button:not(.button) {
   border: 1px solid var(--border);
   background: var(--code-bg);
   color: var(--text);

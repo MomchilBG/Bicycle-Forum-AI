@@ -1,4 +1,4 @@
-#create-post-page {
+#post-form-page {
   flex-grow: 1;
   display: flex;
   align-items: center;
@@ -10,7 +10,7 @@
   }
 }
 
-#create-post-card {
+#post-form-card {
   width: 100%;
   max-width: 560px;
   display: flex;
@@ -18,12 +18,12 @@
   gap: 20px;
 }
 
-#create-post-card h1 {
+#post-form-card h1 {
   margin: 0;
   text-align: center;
 }
 
-#create-post-card textarea {
+#post-form-card textarea {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -34,12 +34,12 @@
   resize: vertical;
 }
 
-#create-post-card textarea:focus-visible {
+#post-form-card textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-#create-post-card button.button.primary {
+#post-form-card button.button.primary {
   width: 100%;
   justify-content: center;
   border: none;
@@ -48,7 +48,7 @@
   font-size: 15px;
 }
 
-#create-post-card button.button.primary:disabled {
+#post-form-card button.button.primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
