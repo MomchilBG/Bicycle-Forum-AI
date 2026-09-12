@@ -72,22 +72,20 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
 
   if (error || !post) return null
 
-  const profiles = await getPublicProfiles([post.author_id])
+  // Independent of each other - fetch them concurrently rather than in
+  // series, since each one is its own network round trip.
+  const [profiles, authorBadges, voteRow] = await Promise.all([
+    getPublicProfiles([post.author_id]),
+    getBadgesForUser(post.author_id),
+    viewerId
+      ? supabase.from('votes').select('value').eq('post_id', postId).eq('voter_id', viewerId).maybeSingle()
+      : Promise.resolve(null),
+  ])
+
   const author = profiles.get(post.author_id)
   if (!author) return null
 
-  const authorBadges = await getBadgesForUser(post.author_id)
-
-  let myVote: 1 | -1 | null = null
-  if (viewerId) {
-    const { data: voteRow } = await supabase
-      .from('votes')
-      .select('value')
-      .eq('post_id', postId)
-      .eq('voter_id', viewerId)
-      .maybeSingle()
-    myVote = (voteRow?.value as 1 | -1 | undefined) ?? null
-  }
+  const myVote = (voteRow?.data?.value as 1 | -1 | undefined) ?? null
 
   return {
     id: post.id,
