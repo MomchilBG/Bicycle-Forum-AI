@@ -14,7 +14,9 @@ npm run lint      # eslint .
 npm run preview   # preview the production build locally
 ```
 
-There is no test runner configured yet (no test script, no test framework installed). Supabase has not been added yet either — no client, env vars, or schema exist in the repo yet; see Requirements.md for what the schema needs to cover.
+There is no test runner configured yet (no test script, no test framework installed).
+
+Supabase is set up: the client lives at `src/lib/supabaseClient.ts` (reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` from `.env.local` — copy `.env.example` to get started), generated row/table types are in `src/lib/database.types.ts`, and the schema lives in `supabase/migrations/01`–`12` (profiles/auth wiring, posts+comments, tags, badges, votes+reputation, hardening passes, an `avatars` Storage bucket, and a `posts.dislike_count` column). Apply new migrations with the Supabase MCP tools (`apply_migration` against the project, then mirror the same SQL into a new numbered file here) rather than hand-editing the live schema; regenerate `database.types.ts` via `generate_typescript_types` after any schema change instead of hand-editing it.
 
 ## Commit hygiene
 
@@ -26,13 +28,14 @@ The project is meant to be a **TypeScript + React + Vite** bicycle forum, with *
 
 Key domain entities and rules to preserve when implementing data models and validation:
 
-- **User**: first name + last name (4–32 chars each), email (valid, unique) and/or username.
+- **User**: first name + last name (4–32 chars each), email (valid, unique) and/or username. Username is set at registration and immutable afterward; an optional profile photo is stored in the `avatars` Storage bucket (public read, owner-only write) and referenced by `profiles.avatar_url`.
 - **Admin**: first name + last name (4–32 chars each), email (valid, unique), optional phone number.
-- **Post**: belongs to a user, has a title (16–64 chars), content (32–8192 chars), comments, and a like count.
+- **Post**: belongs to a user, has a title (16–64 chars), content (32–8192 chars), comments, and separate upvote/downvote counts (`like_count`/`dislike_count`) — the UI shows their difference as a single score, with the raw split available on hover.
 - **Comments** are replies to posts, authored by other users.
+- **Votes**: one row per (voter, post-or-comment) in `votes` with `value` of `1` or `-1`; a trigger keeps `posts.like_count`/`dislike_count` and the content author's `profiles.reputation` in sync on insert/update/delete, and blocks voting on your own content.
 - **Tags**: lowercase-only, deduplicated (reuse existing tag rows instead of creating duplicates), attached to a post during post-editing (not at creation time). Post authors manage tags on their own posts; admins can manage tags on any post. Tags drive search.
 - **Reputation**: a per-user score that updates automatically when a post/comment is upvoted or downvoted (and reverses when a vote is removed).
-- **Badges**: auto-awarded on milestones (post count, comment count, reputation thresholds, tenure); shown on profile and next to the username on posts/comments.
+- **Badges**: auto-awarded on milestones (post count, comment count, reputation thresholds, tenure); shown next to the username on posts (not yet surfaced on the profile page or next to comment authors — see status below).
 
 Application surfaces to keep separated by access level:
 
@@ -41,3 +44,16 @@ Application surfaces to keep separated by access level:
 - **Admin part** (admin role): search users by username/email/display name, block/unblock users (blocked users cannot post or comment), delete any post, view/filter/sort all posts.
 
 Table organization in Supabase is left to the implementation, but should reflect the entities and relationships above (users, posts, comments, tags, post_tags, votes/reputation, badges).
+
+## Current implementation status
+
+What's built so far, so a new session doesn't have to rediscover it from the diff:
+
+- **Auth**: `src/auth/AuthProvider.tsx` + `AuthContext.ts` wrap Supabase auth, exposing `session`, `user`, `profile` (the `profiles` row), `loading`, `signOut`, and `refreshProfile` (call after writing to `profiles` so the rest of the app picks up the change without a reload). Register/Login pages are built (`src/pages/Register`, `src/pages/Login`); login accepts a username or email, resolving a username to its email via the `email_for_username` RPC first. Route guarding for authenticated-only pages is `src/components/RequireAuth/RequireAuth.tsx`.
+- **Public part**: Home page (`src/pages/Home`) has the hero, platform stats (from the `platform_stats` view), and the most-commented/most-recent lists (10 each, via `src/lib/posts.ts`). The Join/Log in CTAs hide once signed in. Light/dark theme toggle is in `src/theme/`.
+- **Navbar** (`src/components/Navbar`): shows the signed-in user's avatar (linking to `/profile`) at the far right next to the theme toggle instead of their username; a "New post" link appears for signed-in, non-blocked users. There's no separate log-out control here — it lives on the profile page instead, to avoid accidental clicks.
+- **Profile page** (`/profile`, auth-guarded, `src/pages/Profile`): edit first/last name, change password, upload a profile photo (click the avatar itself — no separate button; `src/lib/profile.ts` handles the Storage upload), a "Your posts" panel, and the log-out button.
+- **Create post** (`/posts/new`, auth-guarded, `src/pages/CreatePost`): title/content form; blocked users see a notice instead of the form (also enforced server-side by RLS).
+- **Post view** (`/posts/:id`, `src/pages/PostView`, deliberately **not** auth-guarded — anyone can read a post and its comments, unlike the "Private part" grouping above, per an explicit product call): author card (avatar, name, username, badges), title/content, upvote/downvote buttons with a net score box between them (hover or keyboard-focus reveals the raw upvote/downvote split), and a comments list + comment form. Voting and commenting both require a signed-in, non-blocked user (`src/lib/postDetail.ts` has the queries/mutations); signed-out visitors see "Log in to vote"/"Log in to comment" prompts instead.
+- **Shared bits**: `PasswordInput` (`src/components/PasswordInput`) gives every password field a show/hide eye-icon toggle. `formatDateTime()` (`src/lib/formatDate.ts`) renders timestamps in the viewer's own timezone, year down to minutes.
+- **Not built yet**: browsing/sorting/filtering the full post list (only the two homepage top-10 lists exist), editing or deleting your own posts/comments, the tags UI (schema and RLS exist; nothing attaches tags to a post yet), the entire admin part (user search, block/unblock, delete-any-post — `is_admin()`/`profiles.role` exist at the DB level but there's no admin UI), and badges are shown on the post view but not yet on the profile page or next to comment authors.
