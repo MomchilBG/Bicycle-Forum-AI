@@ -34,27 +34,38 @@
   text-align: center;
 }
 
-.profile-stats-row {
-  display: flex;
-  gap: 32px;
+.profile-stats-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-.profile-stat {
+.profile-stats-column {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: 10px;
 }
 
-.profile-stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--text-h);
+.profile-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .profile-stat-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text);
+}
+
+.profile-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
 }
 
 .profile-badges ul {

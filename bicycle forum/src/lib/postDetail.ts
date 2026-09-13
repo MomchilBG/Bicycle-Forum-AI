@@ -22,6 +22,7 @@ export interface PostDetail {
   authorBadges: Badge[]
   tags: string[]
   myVote: 1 | -1 | null
+  isSaved: boolean
 }
 
 export interface CommentItem {
@@ -77,12 +78,15 @@ export const getPostDetail = async (postId: string, viewerId: string | null): Pr
 
   // Independent of each other - fetch them concurrently rather than in
   // series, since each one is its own network round trip.
-  const [profiles, badgesByUser, tags, voteRow] = await Promise.all([
+  const [profiles, badgesByUser, tags, voteRow, savedRow] = await Promise.all([
     getPublicProfiles([post.author_id]),
     getBadgesForUsers([post.author_id]),
     getTagsForPost(postId),
     viewerId
       ? supabase.from('votes').select('value').eq('post_id', postId).eq('voter_id', viewerId).maybeSingle()
+      : Promise.resolve(null),
+    viewerId
+      ? supabase.from('saved_posts').select('post_id').eq('post_id', postId).eq('user_id', viewerId).maybeSingle()
       : Promise.resolve(null),
   ])
 
@@ -106,6 +110,7 @@ export const getPostDetail = async (postId: string, viewerId: string | null): Pr
     authorBadges: badgesByUser.get(post.author_id) ?? [],
     tags,
     myVote,
+    isSaved: !!savedRow?.data,
   }
 }
 

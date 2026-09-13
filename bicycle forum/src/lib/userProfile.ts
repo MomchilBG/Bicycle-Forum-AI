@@ -19,7 +19,8 @@ export interface UserProfilePage {
   reputation: number
   createdAt: string
   postCount: number
-  commentCount: number
+  commentsMade: number
+  commentsEarned: number
   badges: UserBadge[]
   posts: PostSummary[]
 }
@@ -56,11 +57,16 @@ export const getUserProfileByUsername = async (username: string): Promise<UserPr
   const { data: profileRow } = await supabase.rpc('public_profiles').eq('username', username.toLowerCase()).maybeSingle()
   if (!profileRow) return null
 
-  const [posts, commentCount, badges] = await Promise.all([
+  const [posts, commentsMade, badges] = await Promise.all([
     getPostsByAuthor(profileRow.id, profileRow.username),
     getCommentCountForUser(profileRow.id),
     getBadgesForUser(profileRow.id),
   ])
+
+  // "Comments earned" is how many comments this user's own posts have
+  // received - just the sum of the per-post counts we already fetched, so
+  // it doesn't need its own round trip.
+  const commentsEarned = posts.reduce((total, post) => total + post.commentCount, 0)
 
   return {
     id: profileRow.id,
@@ -71,7 +77,8 @@ export const getUserProfileByUsername = async (username: string): Promise<UserPr
     reputation: profileRow.reputation,
     createdAt: profileRow.created_at,
     postCount: posts.length,
-    commentCount,
+    commentsMade,
+    commentsEarned,
     badges,
     posts,
   }

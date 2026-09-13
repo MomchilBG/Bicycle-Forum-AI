@@ -345,6 +345,15 @@
   }
 }
 
+.action-link.saved {
+  color: var(--accent);
+
+  &:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+}
+
 .comment-edit-form {
   display: flex;
   flex-direction: column;

@@ -90,9 +90,43 @@
   }
 }
 
-#user-profile-posts h2 {
-  margin: 0 0 16px;
+#user-profile-posts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+#user-profile-posts-header h2 {
+  margin: 0;
   font-size: 18px;
+}
+
+#user-profile-posts-tabs {
+  display: flex;
+  gap: 16px;
+}
+
+#user-profile-posts-tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: var(--text-h);
+  }
+  &.active {
+    color: var(--text-h);
+    border-bottom-color: var(--accent);
+  }
 }
 
 #user-profile-posts ul {

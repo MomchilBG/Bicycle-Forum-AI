@@ -12,6 +12,7 @@ import {
 } from '../../lib/postDetail'
 import type { Badge, CommentItem, PostDetail } from '../../lib/postDetail'
 import { deletePost } from '../../lib/posts'
+import { savePost, unsavePost } from '../../lib/savedPosts'
 import { tagSearchHref } from '../../lib/search'
 import { formatDateTime } from '../../lib/formatDate'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
@@ -155,6 +156,8 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
 
   const [voting, setVoting] = useState(false)
   const [voteError, setVoteError] = useState<string | null>(null)
+  const [savingBookmark, setSavingBookmark] = useState(false)
+  const [bookmarkError, setBookmarkError] = useState<string | null>(null)
   const [commentText, setCommentText] = useState('')
   const [commentError, setCommentError] = useState<string | null>(null)
   const [submittingComment, setSubmittingComment] = useState(false)
@@ -216,6 +219,22 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
 
     await refreshPost()
     setVoting(false)
+  }
+
+  const handleToggleSave = async () => {
+    if (!user || !post || savingBookmark) return
+    setSavingBookmark(true)
+    setBookmarkError(null)
+
+    const { error } = post.isSaved ? await unsavePost(user.id, postId) : await savePost(user.id, postId)
+    setSavingBookmark(false)
+
+    if (error) {
+      setBookmarkError(error.message)
+      return
+    }
+
+    setPost({ ...post, isSaved: !post.isSaved })
   }
 
   const closeDeletePostConfirm = () => {
@@ -484,19 +503,32 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
             {voteError && <span className="auth-error">{voteError}</span>}
           </div>
 
-          {isOwnPost && !profile?.is_blocked && (
+          {user && (
             <div id="post-actions">
-              <Link to={`/posts/${postId}/edit`} className="action-link">
-                Edit
-              </Link>
               <button
                 type="button"
-                className="action-link danger"
-                onClick={() => setShowDeletePostConfirm(true)}
-                disabled={deletingPost}
+                className={post.isSaved ? 'action-link saved' : 'action-link'}
+                onClick={() => void handleToggleSave()}
+                disabled={savingBookmark || (!post.isSaved && !!profile?.is_blocked)}
               >
-                {deletingPost ? 'Deleting…' : 'Delete'}
+                {post.isSaved ? 'Saved' : 'Save'}
               </button>
+              {bookmarkError && <span className="auth-error">{bookmarkError}</span>}
+              {isOwnPost && !profile?.is_blocked && (
+                <>
+                  <Link to={`/posts/${postId}/edit`} className="action-link">
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    className="action-link danger"
+                    onClick={() => setShowDeletePostConfirm(true)}
+                    disabled={deletingPost}
+                  >
+                    {deletingPost ? 'Deleting…' : 'Delete'}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
