@@ -180,7 +180,8 @@
 #post-votes button.button,
 #post-actions a.button,
 #post-actions button.button {
-  padding: 8px 14px;
+  height: 36px;
+  padding: 0 14px;
   font-size: 14px;
 }
 
