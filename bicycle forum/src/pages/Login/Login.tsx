@@ -3,16 +3,17 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
+import AuthField from '../../components/AuthField/AuthField'
 import '../auth.css'
 
-function Login() {
+const Login = () => {
   const navigate = useNavigate()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
 
@@ -59,25 +60,23 @@ function Login() {
       <form id="auth-card" onSubmit={handleSubmit} noValidate>
         <h1>Log in</h1>
 
-        <div className="auth-field">
-          <label htmlFor="identifier">Username or email</label>
+        <AuthField htmlFor="identifier" label="Username or email">
           <input
             id="identifier"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             autoComplete="username"
           />
-        </div>
+        </AuthField>
 
-        <div className="auth-field">
-          <label htmlFor="password">Password</label>
+        <AuthField htmlFor="password" label="Password">
           <PasswordInput
             id="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
           />
-        </div>
+        </AuthField>
 
         {formError && <p className="auth-form-error">{formError}</p>}
 

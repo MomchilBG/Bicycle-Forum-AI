@@ -4,7 +4,7 @@ import { createPost } from '../../lib/posts'
 import { attachTagsToPost } from '../../lib/tags'
 import PostForm from '../../components/PostForm/PostForm'
 
-function CreatePost() {
+const CreatePost = () => {
   const navigate = useNavigate()
   const { profile } = useAuth()
 
@@ -28,7 +28,7 @@ function CreatePost() {
 
   const authorId = profile.id
 
-  async function handleSubmit(title: string, content: string, tags: string[]): Promise<{ error: string | null }> {
+  const handleSubmit = async (title: string, content: string, tags: string[]): Promise<{ error: string | null }> => {
     const { data, error } = await createPost(authorId, title, content)
 
     if (error || !data) {

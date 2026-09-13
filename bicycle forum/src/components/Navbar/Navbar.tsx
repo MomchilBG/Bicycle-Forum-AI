@@ -4,11 +4,9 @@ import { useAuth } from '../../auth/AuthContext'
 import SearchBar from '../SearchBar/SearchBar'
 import './Navbar.css'
 
-function navLinkClass({ isActive }: { isActive: boolean }) {
-  return isActive ? 'active' : undefined
-}
+const navLinkClass = ({ isActive }: { isActive: boolean }) => isActive ? 'active' : undefined
 
-function Navbar() {
+const Navbar = () => {
   const { theme, toggleTheme } = useTheme()
   const { profile } = useAuth()
   const isDark = theme === 'dark' || (theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)

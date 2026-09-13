@@ -16,7 +16,7 @@ export interface PostFormProps {
   onSubmit: (title: string, content: string, tags: string[]) => Promise<{ error: string | null }>
 }
 
-function PostForm({
+const PostForm = ({
   heading,
   initialTitle = '',
   initialContent = '',
@@ -24,7 +24,7 @@ function PostForm({
   submitLabel,
   submittingLabel,
   onSubmit,
-}: PostFormProps) {
+}: PostFormProps) => {
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
   const [tagInput, setTagInput] = useState('')
@@ -33,7 +33,7 @@ function PostForm({
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  function addTag() {
+  const addTag = () => {
     // Underscores are reserved as the navbar search box's stand-in for a
     // space in a multi-word #tag (see lib/search.ts) - normalize them away
     // here so a tag can never contain one for real, which would otherwise
@@ -56,18 +56,18 @@ function PostForm({
     setTagError(null)
   }
 
-  function removeTag(tag: string) {
+  const removeTag = (tag: string) => {
     setTags((current) => current.filter((existing) => existing !== tag))
   }
 
-  function handleTagKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  const handleTagKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
       addTag()
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
 

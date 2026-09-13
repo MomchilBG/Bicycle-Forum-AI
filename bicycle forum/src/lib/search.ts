@@ -13,7 +13,7 @@ export interface ParsedQuery {
 // Underscores stand in for the spaces a multi-word tag can't otherwise
 // express in a space-delimited search box; lowercasing mirrors the username
 // field at registration.
-export function parseSearchQuery(raw: string): ParsedQuery {
+export const parseSearchQuery = (raw: string): ParsedQuery => {
   const words: string[] = []
   const tags: string[] = []
 
@@ -31,7 +31,7 @@ export function parseSearchQuery(raw: string): ParsedQuery {
 
 // Inverse of parseSearchQuery's tag handling - builds the /posts?q=... link
 // a tag pill navigates to when clicked.
-export function tagSearchHref(tagName: string): string {
+export const tagSearchHref = (tagName: string): string => {
   const query = `#${tagName.trim().replace(/\s+/g, '_')}`
   return `/posts?q=${encodeURIComponent(query)}`
 }
@@ -43,7 +43,7 @@ export interface SearchPostsResult {
   totalCount: number
 }
 
-export async function searchPosts(query: ParsedQuery, sort: SortOption, page: number): Promise<SearchPostsResult> {
+export const searchPosts = async (query: ParsedQuery, sort: SortOption, page: number): Promise<SearchPostsResult> => {
   const { data, error } = await supabase.rpc('search_posts', {
     search_words: query.words,
     tag_names: query.tags,

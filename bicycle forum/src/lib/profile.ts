@@ -1,12 +1,10 @@
 import { supabase } from './supabaseClient'
 
-export async function updateProfileName(userId: string, firstName: string, lastName: string) {
-  return supabase.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', userId)
-}
+export const updateProfileName = async (userId: string, firstName: string, lastName: string) => supabase.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', userId)
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 
-export async function uploadAvatar(userId: string, file: File): Promise<{ url: string } | { error: string }> {
+export const uploadAvatar = async (userId: string, file: File): Promise<{ url: string } | { error: string }> => {
   if (!file.type.startsWith('image/')) {
     return { error: 'Please choose an image file.' }
   }

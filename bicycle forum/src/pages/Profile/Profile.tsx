@@ -8,12 +8,13 @@ import type { PostSummary } from '../../lib/posts'
 import { supabase } from '../../lib/supabaseClient'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
+import AuthField from '../../components/AuthField/AuthField'
 import '../auth.css'
 import './Profile.css'
 
 const NAME_PATTERN = /^.{4,32}$/
 
-function Profile() {
+const Profile = () => {
   const { profile } = useAuth()
   if (!profile) return null
   return <ProfileContent profile={profile} />
@@ -21,7 +22,7 @@ function Profile() {
 
 // Split out so `profile` is guaranteed non-null on mount - lets the name
 // fields initialize from it directly instead of syncing in via an effect.
-function ProfileContent({ profile }: { profile: ProfileRow }) {
+const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const { refreshProfile, signOut } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -58,7 +59,7 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
     }
   }, [profile.id, profile.username])
 
-  async function handleNameSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setNameError(null)
     setNameSuccess(null)
@@ -88,7 +89,7 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
     setNameSuccess('Saved.')
   }
 
-  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPasswordError(null)
     setPasswordSuccess(null)
@@ -116,7 +117,7 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
     setPasswordSuccess('Password updated.')
   }
 
-  async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
     setAvatarError(null)
@@ -168,8 +169,7 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
       <div id="profile-panels">
         <form className="profile-card" onSubmit={handleNameSubmit}>
           <h2>Your name</h2>
-          <div className="auth-field">
-            <label htmlFor="firstName">First name</label>
+          <AuthField htmlFor="firstName" label="First name">
             <input
               id="firstName"
               value={firstName}
@@ -177,9 +177,8 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
               maxLength={32}
               autoComplete="given-name"
             />
-          </div>
-          <div className="auth-field">
-            <label htmlFor="lastName">Last name</label>
+          </AuthField>
+          <AuthField htmlFor="lastName" label="Last name">
             <input
               id="lastName"
               value={lastName}
@@ -187,7 +186,7 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
               maxLength={32}
               autoComplete="family-name"
             />
-          </div>
+          </AuthField>
           {nameError && <p className="auth-form-error">{nameError}</p>}
           {nameSuccess && <p className="auth-success">{nameSuccess}</p>}
           <button type="submit" className="button primary" disabled={savingName}>
@@ -197,8 +196,7 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
 
         <form className="profile-card" onSubmit={handlePasswordSubmit}>
           <h2>Change password</h2>
-          <div className="auth-field">
-            <label htmlFor="newPassword">New password</label>
+          <AuthField htmlFor="newPassword" label="New password">
             <PasswordInput
               id="newPassword"
               value={newPassword}
@@ -206,16 +204,15 @@ function ProfileContent({ profile }: { profile: ProfileRow }) {
               placeholder="At least 6 characters"
               autoComplete="new-password"
             />
-          </div>
-          <div className="auth-field">
-            <label htmlFor="confirmPassword">Confirm new password</label>
+          </AuthField>
+          <AuthField htmlFor="confirmPassword" label="Confirm new password">
             <PasswordInput
               id="confirmPassword"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               autoComplete="new-password"
             />
-          </div>
+          </AuthField>
           {passwordError && <p className="auth-form-error">{passwordError}</p>}
           {passwordSuccess && <p className="auth-success">{passwordSuccess}</p>}
           <button type="submit" className="button primary" disabled={savingPassword}>

@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient'
 
-async function getOrCreateTagId(name: string): Promise<{ id: string | null; error: string | null }> {
+const getOrCreateTagId = async (name: string): Promise<{ id: string | null; error: string | null }> => {
   const { data: existing } = await supabase.from('tags').select('id').eq('name', name).maybeSingle()
   if (existing) return { id: existing.id, error: null }
 
@@ -17,7 +17,7 @@ async function getOrCreateTagId(name: string): Promise<{ id: string | null; erro
 
 // Dedupe defensively (callers already do this too) and resolve concurrently -
 // each lookup/insert is independent of the others.
-async function resolveTagIds(tagNames: string[]): Promise<{ ids: string[] | null; error: string | null }> {
+const resolveTagIds = async (tagNames: string[]): Promise<{ ids: string[] | null; error: string | null }> => {
   const uniqueNames = [...new Set(tagNames)]
   const results = await Promise.all(
     uniqueNames.map(async (name) => ({ name, ...(await getOrCreateTagId(name)) })),
@@ -32,7 +32,7 @@ async function resolveTagIds(tagNames: string[]): Promise<{ ids: string[] | null
   return { ids: tagIds, error: null }
 }
 
-export async function attachTagsToPost(postId: string, tagNames: string[]): Promise<{ error: string | null }> {
+export const attachTagsToPost = async (postId: string, tagNames: string[]): Promise<{ error: string | null }> => {
   const { ids: tagIds, error: resolveError } = await resolveTagIds(tagNames)
   if (resolveError) return { error: resolveError }
   if (!tagIds || tagIds.length === 0) return { error: null }
@@ -41,7 +41,7 @@ export async function attachTagsToPost(postId: string, tagNames: string[]): Prom
   return { error: error?.message ?? null }
 }
 
-export async function getTagsForPost(postId: string): Promise<string[]> {
+export const getTagsForPost = async (postId: string): Promise<string[]> => {
   const { data: postTagRows } = await supabase.from('post_tags').select('tag_id').eq('post_id', postId)
 
   const tagIds = (postTagRows ?? []).map((row) => row.tag_id)
@@ -57,7 +57,7 @@ export async function getTagsForPost(postId: string): Promise<string[]> {
 // tag ids *before* deleting the old links, so a failure there (a bad name, a
 // network blip) leaves the post's existing tags untouched instead of wiping
 // them out with nothing to replace them.
-export async function replacePostTags(postId: string, tagNames: string[]): Promise<{ error: string | null }> {
+export const replacePostTags = async (postId: string, tagNames: string[]): Promise<{ error: string | null }> => {
   const { ids: tagIds, error: resolveError } = await resolveTagIds(tagNames)
   if (resolveError) return { error: resolveError }
 

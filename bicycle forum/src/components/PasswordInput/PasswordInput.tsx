@@ -11,7 +11,7 @@ interface PasswordInputProps {
   autoComplete?: string
 }
 
-function PasswordInput({ id, value, onChange, onBlur, placeholder, autoComplete }: PasswordInputProps) {
+const PasswordInput = ({ id, value, onChange, onBlur, placeholder, autoComplete }: PasswordInputProps) => {
   const [visible, setVisible] = useState(false)
 
   return (

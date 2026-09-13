@@ -17,15 +17,14 @@ import { formatDateTime } from '../../lib/formatDate'
 import '../auth.css'
 import './PostView.css'
 
-function AuthorAvatar({ author }: { author: { username: string; avatarUrl: string | null } }) {
-  return author.avatarUrl ? (
+const AuthorAvatar = ({ author }: { author: { username: string; avatarUrl: string | null } }) =>
+  author.avatarUrl ? (
     <img className="author-avatar" src={author.avatarUrl} alt="" />
   ) : (
     <span className="author-avatar author-avatar-fallback">{author.username.slice(0, 1).toUpperCase()}</span>
   )
-}
 
-function CommentBadges({ badges }: { badges: Badge[] }) {
+const CommentBadges = ({ badges }: { badges: Badge[] }) => {
   if (badges.length === 0) return null
   return (
     <span className="comment-badges">
@@ -56,7 +55,7 @@ interface CommentBodyProps {
   onDelete: () => void
 }
 
-function CommentBody({
+const CommentBody = ({
   comment,
   canReply,
   canEdit,
@@ -72,7 +71,7 @@ function CommentBody({
   onEditTextChange,
   onEditSubmit,
   onDelete,
-}: CommentBodyProps) {
+}: CommentBodyProps) => {
   const wasEdited = comment.updatedAt !== comment.createdAt
 
   return (
@@ -134,7 +133,7 @@ function CommentBody({
   )
 }
 
-function PostView() {
+const PostView = () => {
   const { id } = useParams<{ id: string }>()
   if (!id) return null
   // Keyed on the post id so navigating between posts remounts this (and
@@ -142,7 +141,7 @@ function PostView() {
   return <PostViewForPost key={id} postId={id} />
 }
 
-function PostViewForPost({ postId }: { postId: string }) {
+const PostViewForPost = ({ postId }: { postId: string }) => {
   const navigate = useNavigate()
   const { profile, user } = useAuth()
 
@@ -189,17 +188,17 @@ function PostViewForPost({ postId }: { postId: string }) {
     }
   }, [postId, user?.id])
 
-  async function refreshPost() {
+  const refreshPost = async () => {
     const result = await getPostDetail(postId, user?.id ?? null)
     setPost(result)
   }
 
-  async function refreshComments() {
+  const refreshComments = async () => {
     const updated = await getComments(postId)
     setComments(updated)
   }
 
-  async function handleVote(value: 1 | -1) {
+  const handleVote = async (value: 1 | -1) => {
     if (!user || voting) return
     setVoting(true)
     setVoteError(null)
@@ -215,7 +214,7 @@ function PostViewForPost({ postId }: { postId: string }) {
     setVoting(false)
   }
 
-  async function handleDeletePost() {
+  const handleDeletePost = async () => {
     if (!window.confirm('Delete this post? This cannot be undone.')) return
     setDeletingPost(true)
     setPostActionError(null)
@@ -231,7 +230,7 @@ function PostViewForPost({ postId }: { postId: string }) {
     navigate('/profile')
   }
 
-  async function handleCommentSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleCommentSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!profile) return
     setCommentError(null)
@@ -255,19 +254,19 @@ function PostViewForPost({ postId }: { postId: string }) {
     await refreshComments()
   }
 
-  function startReply(commentId: string) {
+  const startReply = (commentId: string) => {
     setReplyingTo(commentId)
     setReplyText('')
     setReplyError(null)
   }
 
-  function cancelReply() {
+  const cancelReply = () => {
     setReplyingTo(null)
     setReplyText('')
     setReplyError(null)
   }
 
-  async function handleReplySubmit(event: FormEvent<HTMLFormElement>, parentId: string) {
+  const handleReplySubmit = async (event: FormEvent<HTMLFormElement>, parentId: string) => {
     event.preventDefault()
     if (!profile) return
     setReplyError(null)
@@ -291,19 +290,19 @@ function PostViewForPost({ postId }: { postId: string }) {
     await refreshComments()
   }
 
-  function startEditComment(comment: CommentItem) {
+  const startEditComment = (comment: CommentItem) => {
     setEditingCommentId(comment.id)
     setEditText(comment.content)
     setEditError(null)
   }
 
-  function cancelEditComment() {
+  const cancelEditComment = () => {
     setEditingCommentId(null)
     setEditText('')
     setEditError(null)
   }
 
-  async function handleEditCommentSubmit(event: FormEvent<HTMLFormElement>, commentId: string) {
+  const handleEditCommentSubmit = async (event: FormEvent<HTMLFormElement>, commentId: string) => {
     event.preventDefault()
     setEditError(null)
 
@@ -326,7 +325,7 @@ function PostViewForPost({ postId }: { postId: string }) {
     await refreshComments()
   }
 
-  async function handleDeleteComment(commentId: string) {
+  const handleDeleteComment = async (commentId: string) => {
     if (!window.confirm('Delete this comment? This cannot be undone.')) return
     setDeletingCommentId(commentId)
 
@@ -371,7 +370,7 @@ function PostViewForPost({ postId }: { postId: string }) {
     }
   }
 
-  function renderCommentBody(comment: CommentItem, canReply: boolean) {
+  const renderCommentBody = (comment: CommentItem, canReply: boolean) => {
     const isOwn = profile?.id === comment.author.id
     const isOwnAndNotBlocked = isOwn && !!profile && !profile.is_blocked
     // While a comment is being edited, only its own Edit stays available -

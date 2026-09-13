@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 import { AuthContext, type Profile } from './AuthContext'
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [profileState, setProfileState] = useState<{ userId: string; profile: Profile | null } | null>(null)
   const [loading, setLoading] = useState(true)

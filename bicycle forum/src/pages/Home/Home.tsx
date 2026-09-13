@@ -13,7 +13,7 @@ const features = [
   { title: 'Light & dark mode', description: 'Switch themes any time with the toggle in the navbar.' },
 ]
 
-function Home() {
+const Home = () => {
   const { user } = useAuth()
   const [stats, setStats] = useState<PlatformStats>({ userCount: 0, postCount: 0 })
   const [mostCommented, setMostCommented] = useState<PostSummary[]>([])

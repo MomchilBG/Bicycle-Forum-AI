@@ -6,11 +6,9 @@ import type { SortOption } from '../../lib/search'
 import type { PostSummary } from '../../lib/posts'
 import './PostsBrowse.css'
 
-function sortLinkClass(current: SortOption, target: SortOption) {
-  return current === target ? 'active' : undefined
-}
+const sortLinkClass = (current: SortOption, target: SortOption) => current === target ? 'active' : undefined
 
-function PostsBrowse() {
+const PostsBrowse = () => {
   const [searchParams] = useSearchParams()
   const q = searchParams.get('q') ?? ''
   const sort: SortOption = searchParams.get('sort') === 'score' ? 'score' : 'recent'
@@ -20,7 +18,7 @@ function PostsBrowse() {
   return <PostsBrowseResults key={`${q}::${sort}`} q={q} sort={sort} />
 }
 
-function PostsBrowseResults({ q, sort }: { q: string; sort: SortOption }) {
+const PostsBrowseResults = ({ q, sort }: { q: string; sort: SortOption }) => {
   const [posts, setPosts] = useState<PostSummary[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -42,7 +40,7 @@ function PostsBrowseResults({ q, sort }: { q: string; sort: SortOption }) {
     }
   }, [q, sort])
 
-  async function handleLoadMore() {
+  const handleLoadMore = async () => {
     setLoadingMore(true)
     const nextPage = page + 1
     const result = await searchPosts(parseSearchQuery(q), sort, nextPage)
@@ -53,7 +51,7 @@ function PostsBrowseResults({ q, sort }: { q: string; sort: SortOption }) {
 
   const hasMore = posts.length < totalCount
 
-  function sortLink(target: SortOption): string {
+  const sortLink = (target: SortOption): string => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
     params.set('sort', target)

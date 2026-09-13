@@ -43,7 +43,7 @@ const UNKNOWN_AUTHOR: PublicProfile = {
   reputation: 0,
 }
 
-async function getBadgesForUsers(userIds: string[]): Promise<Map<string, Badge[]>> {
+const getBadgesForUsers = async (userIds: string[]): Promise<Map<string, Badge[]>> => {
   const map = new Map<string, Badge[]>()
   if (userIds.length === 0) return map
 
@@ -66,7 +66,7 @@ async function getBadgesForUsers(userIds: string[]): Promise<Map<string, Badge[]
   return map
 }
 
-export async function getPostDetail(postId: string, viewerId: string | null): Promise<PostDetail | null> {
+export const getPostDetail = async (postId: string, viewerId: string | null): Promise<PostDetail | null> => {
   const { data: post, error } = await supabase
     .from('posts')
     .select('id, title, content, created_at, updated_at, like_count, dislike_count, author_id')
@@ -109,7 +109,7 @@ export async function getPostDetail(postId: string, viewerId: string | null): Pr
   }
 }
 
-export async function getComments(postId: string): Promise<CommentItem[]> {
+export const getComments = async (postId: string): Promise<CommentItem[]> => {
   const { data: comments, error } = await supabase
     .from('comments')
     .select('id, content, created_at, updated_at, author_id, parent_comment_id')
@@ -132,21 +132,15 @@ export async function getComments(postId: string): Promise<CommentItem[]> {
   }))
 }
 
-export function createComment(postId: string, authorId: string, content: string, parentCommentId: string | null = null) {
-  return supabase.from('comments').insert({ post_id: postId, author_id: authorId, content, parent_comment_id: parentCommentId })
-}
+export const createComment = (postId: string, authorId: string, content: string, parentCommentId: string | null = null) => supabase.from('comments').insert({ post_id: postId, author_id: authorId, content, parent_comment_id: parentCommentId })
 
-export function updateComment(commentId: string, content: string) {
-  return supabase.from('comments').update({ content }).eq('id', commentId)
-}
+export const updateComment = (commentId: string, content: string) => supabase.from('comments').update({ content }).eq('id', commentId)
 
-export function deleteComment(commentId: string) {
-  return supabase.from('comments').delete().eq('id', commentId)
-}
+export const deleteComment = (commentId: string) => supabase.from('comments').delete().eq('id', commentId)
 
 // One vote per (voter, post): insert if none yet, delete to toggle the same
 // value off, or update when switching from up- to downvote (or vice versa).
-export async function castVote(postId: string, voterId: string, value: 1 | -1) {
+export const castVote = async (postId: string, voterId: string, value: 1 | -1) => {
   const { data: existing } = await supabase
     .from('votes')
     .select('id, value')

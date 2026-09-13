@@ -26,7 +26,7 @@ interface PostRow {
   author_id: string
 }
 
-export async function getPlatformStats(): Promise<PlatformStats> {
+export const getPlatformStats = async (): Promise<PlatformStats> => {
   // A SECURITY DEFINER function, not a plain `.from()` select - platform_stats
   // used to be a `security_invoker` view, which meant its profiles count ran
   // under the viewer's own RLS (only their own row is visible to a non-admin),
@@ -36,7 +36,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   return { userCount: data.user_count ?? 0, postCount: data.post_count ?? 0 }
 }
 
-async function getPosts(orderBy: 'comment_count' | 'created_at', limit: number): Promise<PostSummary[]> {
+const getPosts = async (orderBy: 'comment_count' | 'created_at', limit: number): Promise<PostSummary[]> => {
   const { data: posts, error } = await supabase
     .from('posts')
     .select('id, title, created_at, comment_count, author_id')
@@ -60,17 +60,13 @@ async function getPosts(orderBy: 'comment_count' | 'created_at', limit: number):
   }))
 }
 
-export function getMostCommentedPosts(limit = 10): Promise<PostSummary[]> {
-  return getPosts('comment_count', limit)
-}
+export const getMostCommentedPosts = (limit = 10): Promise<PostSummary[]> => getPosts('comment_count', limit)
 
-export function getMostRecentPosts(limit = 10): Promise<PostSummary[]> {
-  return getPosts('created_at', limit)
-}
+export const getMostRecentPosts = (limit = 10): Promise<PostSummary[]> => getPosts('created_at', limit)
 
 // The caller already knows their own username, so this skips the
 // public_profiles() round trip that getPosts() needs for other people's posts.
-export async function getPostsByAuthor(authorId: string, authorUsername: string): Promise<PostSummary[]> {
+export const getPostsByAuthor = async (authorId: string, authorUsername: string): Promise<PostSummary[]> => {
   const { data: posts, error } = await supabase
     .from('posts')
     .select('id, title, created_at, comment_count, author_id')
@@ -88,9 +84,7 @@ export async function getPostsByAuthor(authorId: string, authorUsername: string)
   }))
 }
 
-export async function createPost(authorId: string, title: string, content: string) {
-  return supabase.from('posts').insert({ author_id: authorId, title, content }).select('id').single()
-}
+export const createPost = async (authorId: string, title: string, content: string) => supabase.from('posts').insert({ author_id: authorId, title, content }).select('id').single()
 
 export interface EditablePost {
   title: string
@@ -102,7 +96,7 @@ export interface EditablePost {
 // Deliberately leaner than getPostDetail() (no author profile, badges, or
 // vote lookup) since an edit form only needs the post's own fields plus its
 // tags.
-export async function getPostForEdit(postId: string): Promise<EditablePost | null> {
+export const getPostForEdit = async (postId: string): Promise<EditablePost | null> => {
   const [{ data: post, error }, tags] = await Promise.all([
     supabase.from('posts').select('title, content, author_id').eq('id', postId).single(),
     getTagsForPost(postId),
@@ -113,10 +107,6 @@ export async function getPostForEdit(postId: string): Promise<EditablePost | nul
   return { title: post.title, content: post.content, authorId: post.author_id, tags }
 }
 
-export function updatePost(postId: string, title: string, content: string) {
-  return supabase.from('posts').update({ title, content }).eq('id', postId)
-}
+export const updatePost = (postId: string, title: string, content: string) => supabase.from('posts').update({ title, content }).eq('id', postId)
 
-export function deletePost(postId: string) {
-  return supabase.from('posts').delete().eq('id', postId)
-}
+export const deletePost = (postId: string) => supabase.from('posts').delete().eq('id', postId)

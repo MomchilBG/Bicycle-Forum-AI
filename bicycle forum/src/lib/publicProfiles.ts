@@ -9,7 +9,7 @@ export interface PublicProfile {
   reputation: number
 }
 
-export async function getPublicProfiles(ids: string[]): Promise<Map<string, PublicProfile>> {
+export const getPublicProfiles = async (ids: string[]): Promise<Map<string, PublicProfile>> => {
   const map = new Map<string, PublicProfile>()
   if (ids.length === 0) return map
 

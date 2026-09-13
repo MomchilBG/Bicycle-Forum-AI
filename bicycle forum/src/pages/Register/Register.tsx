@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
+import AuthField from '../../components/AuthField/AuthField'
 import '../auth.css'
 
 interface FormValues {
@@ -24,7 +25,7 @@ const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 // Only the checks that don't need a round-trip to the database - those run
 // live as the user types/blurs. Username availability still has to be
 // checked against Supabase at submit time.
-function validate(values: FormValues): FormErrors {
+const validate = (values: FormValues): FormErrors => {
   const errors: FormErrors = {}
 
   if (!NAME_PATTERN.test(values.firstName.trim())) {
@@ -49,7 +50,7 @@ function validate(values: FormValues): FormErrors {
   return errors
 }
 
-function Register() {
+const Register = () => {
   const navigate = useNavigate()
   const [values, setValues] = useState<FormValues>({
     firstName: '',
@@ -69,22 +70,22 @@ function Register() {
   // moment it's fixed instead of waiting for the next blur or submit.
   const liveErrors = validate(values)
 
-  function fieldError(field: keyof FormValues): string | undefined {
+  const fieldError = (field: keyof FormValues): string | undefined => {
     if (!touched[field]) return undefined
     if (field === 'username' && usernameTakenError && !liveErrors.username) return usernameTakenError
     return liveErrors[field]
   }
 
-  function updateField<K extends keyof FormValues>(field: K, value: FormValues[K]) {
+  const updateField = <K extends keyof FormValues,>(field: K, value: FormValues[K]) => {
     setValues((current) => ({ ...current, [field]: value }))
     if (field === 'username') setUsernameTakenError(null)
   }
 
-  function markTouched(field: keyof FormValues) {
+  const markTouched = (field: keyof FormValues) => {
     setTouched((current) => ({ ...current, [field]: true }))
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
     setSuccessMessage(null)
@@ -153,8 +154,7 @@ function Register() {
       <form id="auth-card" onSubmit={handleSubmit} noValidate>
         <h1>Register</h1>
 
-        <div className="auth-field">
-          <label htmlFor="firstName">First name</label>
+        <AuthField htmlFor="firstName" label="First name" error={fieldError('firstName')}>
           <input
             id="firstName"
             value={values.firstName}
@@ -164,11 +164,9 @@ function Register() {
             maxLength={32}
             autoComplete="given-name"
           />
-          {fieldError('firstName') && <span className="auth-error">{fieldError('firstName')}</span>}
-        </div>
+        </AuthField>
 
-        <div className="auth-field">
-          <label htmlFor="lastName">Last name</label>
+        <AuthField htmlFor="lastName" label="Last name" error={fieldError('lastName')}>
           <input
             id="lastName"
             value={values.lastName}
@@ -178,11 +176,9 @@ function Register() {
             maxLength={32}
             autoComplete="family-name"
           />
-          {fieldError('lastName') && <span className="auth-error">{fieldError('lastName')}</span>}
-        </div>
+        </AuthField>
 
-        <div className="auth-field">
-          <label htmlFor="username">Username</label>
+        <AuthField htmlFor="username" label="Username" error={fieldError('username')}>
           <input
             id="username"
             value={values.username}
@@ -192,11 +188,9 @@ function Register() {
             maxLength={32}
             autoComplete="username"
           />
-          {fieldError('username') && <span className="auth-error">{fieldError('username')}</span>}
-        </div>
+        </AuthField>
 
-        <div className="auth-field">
-          <label htmlFor="email">Email</label>
+        <AuthField htmlFor="email" label="Email" error={fieldError('email')}>
           <input
             id="email"
             type="email"
@@ -206,11 +200,9 @@ function Register() {
             placeholder="you@example.com"
             autoComplete="email"
           />
-          {fieldError('email') && <span className="auth-error">{fieldError('email')}</span>}
-        </div>
+        </AuthField>
 
-        <div className="auth-field">
-          <label htmlFor="password">Password</label>
+        <AuthField htmlFor="password" label="Password" error={fieldError('password')}>
           <PasswordInput
             id="password"
             value={values.password}
@@ -219,11 +211,9 @@ function Register() {
             placeholder="At least 6 characters"
             autoComplete="new-password"
           />
-          {fieldError('password') && <span className="auth-error">{fieldError('password')}</span>}
-        </div>
+        </AuthField>
 
-        <div className="auth-field">
-          <label htmlFor="confirmPassword">Confirm password</label>
+        <AuthField htmlFor="confirmPassword" label="Confirm password" error={fieldError('confirmPassword')}>
           <PasswordInput
             id="confirmPassword"
             value={values.confirmPassword}
@@ -232,8 +222,7 @@ function Register() {
             placeholder="Re-enter your password"
             autoComplete="new-password"
           />
-          {fieldError('confirmPassword') && <span className="auth-error">{fieldError('confirmPassword')}</span>}
-        </div>
+        </AuthField>
 
         {formError && <p className="auth-form-error">{formError}</p>}
         {successMessage && <p className="auth-success">{successMessage}</p>}

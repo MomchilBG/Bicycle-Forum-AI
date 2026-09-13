@@ -6,13 +6,13 @@ import type { EditablePost } from '../../lib/posts'
 import { replacePostTags } from '../../lib/tags'
 import PostForm from '../../components/PostForm/PostForm'
 
-function EditPost() {
+const EditPost = () => {
   const { id } = useParams<{ id: string }>()
   if (!id) return null
   return <EditPostForId postId={id} />
 }
 
-function EditPostForId({ postId }: { postId: string }) {
+const EditPostForId = ({ postId }: { postId: string }) => {
   const navigate = useNavigate()
   const { profile } = useAuth()
 
@@ -67,7 +67,7 @@ function EditPostForId({ postId }: { postId: string }) {
     )
   }
 
-  async function handleSubmit(title: string, content: string, tags: string[]): Promise<{ error: string | null }> {
+  const handleSubmit = async (title: string, content: string, tags: string[]): Promise<{ error: string | null }> => {
     const { error } = await updatePost(postId, title, content)
     if (error) return { error: error.message }
 

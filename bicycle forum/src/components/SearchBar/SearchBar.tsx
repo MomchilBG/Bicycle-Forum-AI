@@ -3,11 +3,11 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './SearchBar.css'
 
-function SearchBar() {
+const SearchBar = () => {
   const navigate = useNavigate()
   const [value, setValue] = useState('')
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmed = value.trim()
     navigate(trimmed ? `/posts?q=${encodeURIComponent(trimmed)}` : '/posts')
