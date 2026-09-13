@@ -16,6 +16,13 @@
     order: 1;
     flex-basis: 100%;
   }
+
+  @media (max-width: 640px) {
+    order: 0;
+    flex: 1;
+    flex-basis: auto;
+    min-width: 0;
+  }
 }
 
 #search-bar input {

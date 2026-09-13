@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useTheme } from '../../theme/ThemeContext'
 import { useAuth } from '../../auth/AuthContext'
@@ -9,39 +10,55 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) => isActive ? 'active
 const Navbar = () => {
   const { theme, toggleTheme } = useTheme()
   const { profile } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
   const isDark = theme === 'dark' || (theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+  const closeMenu = () => setMenuOpen(false)
 
   return (
     <header id="navbar">
-      <NavLink to="/" id="brand">
-        🚲 Bicycle Forum
-      </NavLink>
-      <nav>
-        <NavLink to="/" end className={navLinkClass}>
-          Home
+      <button
+        type="button"
+        id="nav-menu-toggle"
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+      <div id="nav-menu" className={menuOpen ? 'open' : undefined}>
+        <NavLink to="/" id="brand" onClick={closeMenu}>
+          🚲 Bicycle Forum
         </NavLink>
-        {profile ? (
-          <>
-            <NavLink to="/posts" end className={navLinkClass}>
-              Posts
-            </NavLink>
-            {!profile.is_blocked && (
-              <NavLink to="/posts/new" className={navLinkClass}>
-                New post
+        <nav>
+          <NavLink to="/" end className={navLinkClass} onClick={closeMenu}>
+            Home
+          </NavLink>
+          {profile ? (
+            <>
+              <NavLink to="/posts" end className={navLinkClass} onClick={closeMenu}>
+                Posts
               </NavLink>
-            )}
-          </>
-        ) : (
-          <>
-            <NavLink to="/login" className={navLinkClass}>
-              Log in
-            </NavLink>
-            <NavLink to="/register" className={navLinkClass}>
-              Register
-            </NavLink>
-          </>
-        )}
-      </nav>
+              {!profile.is_blocked && (
+                <NavLink to="/posts/new" className={navLinkClass} onClick={closeMenu}>
+                  New post
+                </NavLink>
+              )}
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className={navLinkClass} onClick={closeMenu}>
+                Log in
+              </NavLink>
+              <NavLink to="/register" className={navLinkClass} onClick={closeMenu}>
+                Register
+              </NavLink>
+            </>
+          )}
+        </nav>
+      </div>
       {profile && <SearchBar />}
       {profile && (
         <NavLink to={`/users/${profile.username}`} id="nav-avatar" aria-label="Your profile" className={navLinkClass}>

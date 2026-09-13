@@ -20,6 +20,84 @@
   }
 }
 
+#nav-menu-toggle {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--text-h);
+  }
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+#nav-menu {
+  display: contents;
+}
+
+@media (max-width: 640px) {
+  #navbar {
+    flex-wrap: nowrap;
+  }
+
+  #nav-menu-toggle {
+    display: flex;
+  }
+
+  #nav-menu {
+    display: none;
+
+    &.open {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      padding: 16px 20px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+  }
+
+  #nav-menu.open nav {
+    flex-direction: column;
+    align-items: flex-start;
+    flex: initial;
+    width: 100%;
+  }
+
+  /* With #nav-menu collapsed, nothing left of the toggle grows to fill the
+     row - dock it to the right explicitly (harmless when the search bar is
+     also present, since that already grows to fill any leftover space). */
+  #theme-toggle {
+    margin-left: auto;
+  }
+}
+
 #brand {
   font-weight: 600;
   font-size: 18px;
