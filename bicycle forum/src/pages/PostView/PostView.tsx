@@ -474,7 +474,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
           <div id="post-votes">
             <button
               type="button"
-              className={post.myVote === 1 ? 'active' : ''}
+              className={post.myVote === 1 ? 'vote-arrow active' : 'vote-arrow'}
               onClick={() => handleVote(1)}
               disabled={!canVote || voting}
               aria-label="Upvote"
@@ -491,7 +491,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
             </div>
             <button
               type="button"
-              className={post.myVote === -1 ? 'active' : ''}
+              className={post.myVote === -1 ? 'vote-arrow active' : 'vote-arrow'}
               onClick={() => handleVote(-1)}
               disabled={!canVote || voting}
               aria-label="Downvote"
@@ -499,36 +499,34 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
             >
               ▼
             </button>
-            {!user && <span className="post-view-hint">Log in to vote.</span>}
-            {voteError && <span className="auth-error">{voteError}</span>}
-          </div>
-
-          {user && (
-            <div id="post-actions">
+            {user && (
               <button
                 type="button"
-                className={post.isSaved ? 'action-link saved' : 'action-link'}
+                className={post.isSaved ? 'button primary' : 'button'}
                 onClick={() => void handleToggleSave()}
                 disabled={savingBookmark || (!post.isSaved && !!profile?.is_blocked)}
               >
                 {post.isSaved ? 'Saved' : 'Save'}
               </button>
-              {bookmarkError && <span className="auth-error">{bookmarkError}</span>}
-              {isOwnPost && !profile?.is_blocked && (
-                <>
-                  <Link to={`/posts/${postId}/edit`} className="action-link">
-                    Edit
-                  </Link>
-                  <button
-                    type="button"
-                    className="action-link danger"
-                    onClick={() => setShowDeletePostConfirm(true)}
-                    disabled={deletingPost}
-                  >
-                    {deletingPost ? 'Deleting…' : 'Delete'}
-                  </button>
-                </>
-              )}
+            )}
+            {!user && <span className="post-view-hint">Log in to vote.</span>}
+            {voteError && <span className="auth-error">{voteError}</span>}
+            {bookmarkError && <span className="auth-error">{bookmarkError}</span>}
+          </div>
+
+          {isOwnPost && !profile?.is_blocked && (
+            <div id="post-actions">
+              <Link to={`/posts/${postId}/edit`} className="button">
+                Edit
+              </Link>
+              <button
+                type="button"
+                className="button danger"
+                onClick={() => setShowDeletePostConfirm(true)}
+                disabled={deletingPost}
+              >
+                {deletingPost ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
           )}
         </div>

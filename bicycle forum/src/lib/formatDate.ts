@@ -7,3 +7,11 @@ export const formatDateTime = (iso: string): string => new Date(iso).toLocaleStr
     hour: 'numeric',
     minute: '2-digit',
   })
+
+// Same as formatDateTime() but date-only, for contexts (like a profile's
+// "Joined" line) where the time of day isn't meaningful.
+export const formatDate = (iso: string): string => new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })

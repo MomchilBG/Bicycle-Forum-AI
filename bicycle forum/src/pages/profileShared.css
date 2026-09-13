@@ -1,9 +1,9 @@
 /* Shared between the own-profile (edit) page and the public per-user profile
-   page: the boxed-panel look and the joined-date line under the avatar. The
-   post/comment count stats box and earned-badges list also use these
-   classes, but only the public profile page renders them now - the edit
-   page dropped them to stay focused on editing (name/password/photo) plus
-   read-only username/email panels. */
+   page: the boxed-panel look (.profile-box/.profile-grid-2). The stats box
+   and earned-badges list also use these classes, but only the public
+   profile page renders them now - the edit page dropped them to stay
+   focused on editing (name/password/photo) plus read-only username/email
+   panels. */
 
 .profile-box {
   border: 1px solid var(--border);
@@ -25,13 +25,6 @@
 .profile-box h2 {
   margin: 0 0 16px;
   font-size: 18px;
-}
-
-.profile-joined {
-  margin: 0;
-  color: var(--text);
-  font-size: 13px;
-  text-align: center;
 }
 
 .profile-stats-columns {

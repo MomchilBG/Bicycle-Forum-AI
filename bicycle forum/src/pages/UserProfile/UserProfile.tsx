@@ -6,7 +6,7 @@ import type { UserProfilePage as UserProfileData } from '../../lib/userProfile'
 import { getSavedPostCount, getSavedPostsByUser } from '../../lib/savedPosts'
 import type { PostSummary } from '../../lib/posts'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
-import { formatDateTime } from '../../lib/formatDate'
+import { formatDate, formatDateTime } from '../../lib/formatDate'
 import '../profileShared.css'
 import './UserProfile.css'
 
@@ -88,11 +88,11 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
   }
 
   const statsItems = [
-    { label: 'Posts', value: data.postCount },
-    { label: 'Comments made', value: data.commentsMade },
     { label: 'Reputation', value: data.reputation },
-    { label: 'Comments earned', value: data.commentsEarned },
+    { label: 'Posts', value: data.postCount },
     ...(isOwnProfile ? [{ label: 'Saved', value: savedCount }] : []),
+    { label: 'Comments made', value: data.commentsMade },
+    { label: 'Comments earned', value: data.commentsEarned },
   ]
   const statsMid = Math.ceil(statsItems.length / 2)
   const statsColumns = [statsItems.slice(0, statsMid), statsItems.slice(statsMid)]
@@ -110,12 +110,11 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
               <span id="user-profile-avatar-fallback">{data.username.slice(0, 1).toUpperCase()}</span>
             )}
           </div>
-          <p className="profile-joined">Joined {formatDateTime(data.createdAt)}</p>
         </div>
         <div id="user-profile-identity">
           <h1>{data.username}</h1>
           <p id="user-profile-subtitle">
-            {data.firstName} {data.lastName}
+            {data.firstName} {data.lastName} · Joined {formatDate(data.createdAt)}
           </p>
         </div>
         {isOwnProfile && (
@@ -159,7 +158,7 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
 
       <div id="user-profile-posts" className="profile-box">
         <div id="user-profile-posts-header">
-          <h2>{postsTab === 'posts' ? 'Posts' : 'Saved posts'}</h2>
+          <h2>{postsTab === 'posts' ? 'Created posts' : 'Saved posts'}</h2>
           {isOwnProfile && (
             <div id="user-profile-posts-tabs">
               <button type="button" className={postsTab === 'posts' ? 'active' : undefined} onClick={() => setPostsTab('posts')}>
