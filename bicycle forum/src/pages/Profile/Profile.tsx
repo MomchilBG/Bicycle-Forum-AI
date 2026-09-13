@@ -284,7 +284,7 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
               id="deletePassword"
               value={deletePassword}
               onChange={(event) => setDeletePassword(event.target.value)}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
           </AuthField>
         </ConfirmDialog>
