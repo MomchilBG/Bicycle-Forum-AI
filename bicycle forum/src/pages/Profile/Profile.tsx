@@ -5,11 +5,15 @@ import { useAuth, type Profile as ProfileRow } from '../../auth/AuthContext'
 import { updateProfileName, uploadAvatar } from '../../lib/profile'
 import { getPostsByAuthor } from '../../lib/posts'
 import type { PostSummary } from '../../lib/posts'
+import { getBadgesForUser, getCommentCountForUser } from '../../lib/userProfile'
+import type { UserBadge } from '../../lib/userProfile'
 import { supabase } from '../../lib/supabaseClient'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import AuthField from '../../components/AuthField/AuthField'
+import { formatDateTime } from '../../lib/formatDate'
 import '../auth.css'
+import '../profileShared.css'
 import './Profile.css'
 
 const NAME_PATTERN = /^.{4,32}$/
@@ -43,15 +47,22 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
 
   const [posts, setPosts] = useState<PostSummary[]>([])
   const [postsLoading, setPostsLoading] = useState(true)
+  const [commentCount, setCommentCount] = useState(0)
+  const [badges, setBadges] = useState<UserBadge[]>([])
 
   useEffect(() => {
     let cancelled = false
 
-    getPostsByAuthor(profile.id, profile.username).then((result) => {
-      if (!cancelled) {
-        setPosts(result)
-        setPostsLoading(false)
-      }
+    Promise.all([
+      getPostsByAuthor(profile.id, profile.username),
+      getCommentCountForUser(profile.id),
+      getBadgesForUser(profile.id),
+    ]).then(([postsResult, commentCountResult, badgesResult]) => {
+      if (cancelled) return
+      setPosts(postsResult)
+      setCommentCount(commentCountResult)
+      setBadges(badgesResult)
+      setPostsLoading(false)
     })
 
     return () => {
@@ -156,15 +167,42 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} hidden />
         <div id="profile-identity">
           <h1>{profile.username}</h1>
-          <p id="profile-subtitle">
+          <p className="profile-subtitle">
             {profile.first_name} {profile.last_name} · {profile.reputation} reputation
           </p>
+          <p className="profile-subtitle">{profile.email}</p>
+          <p className="profile-subtitle">Joined {formatDateTime(profile.created_at)}</p>
           {avatarError && <span className="auth-error">{avatarError}</span>}
         </div>
         <button type="button" id="profile-logout" onClick={() => void signOut()}>
           Log out
         </button>
       </div>
+
+      <div className="profile-stats">
+        <div className="profile-stat">
+          <span className="profile-stat-value">{posts.length}</span>
+          <span className="profile-stat-label">Posts</span>
+        </div>
+        <div className="profile-stat">
+          <span className="profile-stat-value">{commentCount}</span>
+          <span className="profile-stat-label">Comments</span>
+        </div>
+      </div>
+
+      {badges.length > 0 && (
+        <div className="profile-badges">
+          <h2>Badges</h2>
+          <ul>
+            {badges.map((badge) => (
+              <li key={badge.id} title={badge.description}>
+                <span className="badge-pill">{badge.name}</span>
+                <span className="user-badge-date">Earned {formatDateTime(badge.awardedAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div id="profile-panels">
         <form className="profile-card" onSubmit={handleNameSubmit}>

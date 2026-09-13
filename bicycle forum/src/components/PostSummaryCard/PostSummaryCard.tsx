@@ -9,7 +9,7 @@ const PostSummaryCard = ({ post }: { post: PostSummary }) => (
       {post.title}
     </Link>
     <span className="post-meta">
-      by {post.author} · {post.commentCount} comments
+      by <Link to={`/users/${post.author}`}>{post.author}</Link> · {post.commentCount} comments
       {post.score !== undefined && ` · ${post.score} score`} · {formatDateTime(post.createdAt)}
     </span>
   </li>

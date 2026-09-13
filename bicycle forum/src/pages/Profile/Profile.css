@@ -33,7 +33,7 @@
   margin: 0;
 }
 
-#profile-subtitle {
+.profile-subtitle {
   margin: 0;
   color: var(--text);
   font-size: 15px;

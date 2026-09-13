@@ -79,7 +79,9 @@ const CommentBody = ({
       <AuthorAvatar author={comment.author} />
       <div>
         <div className="comment-meta">
-          <span className="comment-author">{comment.author.username}</span>
+          <Link to={`/users/${comment.author.username}`} className="comment-author">
+            {comment.author.username}
+          </Link>
           <CommentBadges badges={comment.badges} />
           <span className="comment-date">
             {formatDateTime(comment.createdAt)}
@@ -403,7 +405,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
     <section id="post-view-page">
       <article id="post-view">
         <div className="post-author-card">
-          <div className="post-author-top">
+          <Link to={`/users/${post.author.username}`} className="post-author-top">
             <AuthorAvatar author={post.author} />
             <div>
               <div className="post-author-name">
@@ -411,7 +413,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
               </div>
               <div className="post-author-username">@{post.author.username}</div>
             </div>
-          </div>
+          </Link>
           {post.authorBadges.length > 0 && (
             <ul className="badge-list">
               {post.authorBadges.map((badge) => (

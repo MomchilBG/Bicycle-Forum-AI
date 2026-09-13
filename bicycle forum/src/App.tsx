@@ -9,6 +9,7 @@ import CreatePost from './pages/CreatePost/CreatePost'
 import EditPost from './pages/EditPost/EditPost'
 import PostView from './pages/PostView/PostView'
 import PostsBrowse from './pages/PostsBrowse/PostsBrowse'
+import UserProfile from './pages/UserProfile/UserProfile'
 import NotFound from './pages/NotFound/NotFound'
 
 const App = () => (
@@ -18,6 +19,7 @@ const App = () => (
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/posts/:id" element={<PostView />} />
+      <Route path="/users/:username" element={<UserProfile />} />
       <Route element={<RequireAuth />}>
         <Route path="/profile" element={<Profile />} />
         <Route path="/posts/new" element={<CreatePost />} />
