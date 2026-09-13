@@ -39,16 +39,24 @@
   outline-offset: 1px;
 }
 
-#post-form-card button.button.primary {
-  width: 100%;
+#post-form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+#post-form-actions .button {
+  flex: 1;
   justify-content: center;
-  border: none;
-  cursor: pointer;
   font: inherit;
   font-size: 15px;
 }
 
-#post-form-card button.button.primary:disabled {
+#post-form-actions button.button.primary {
+  border: none;
+  cursor: pointer;
+}
+
+#post-form-actions button.button.primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

@@ -87,6 +87,7 @@ const EditPostForId = ({ postId }: { postId: string }) => {
       initialTags={post.tags}
       submitLabel="Save changes"
       submittingLabel="Saving…"
+      cancelHref={`/posts/${postId}`}
       onSubmit={handleSubmit}
     />
   )

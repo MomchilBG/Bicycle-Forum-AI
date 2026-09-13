@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
+import { Link } from 'react-router-dom'
 import '../../pages/auth.css'
 import './PostForm.css'
 
@@ -13,6 +14,7 @@ export interface PostFormProps {
   initialTags?: string[]
   submitLabel: string
   submittingLabel: string
+  cancelHref?: string
   onSubmit: (title: string, content: string, tags: string[]) => Promise<{ error: string | null }>
 }
 
@@ -23,6 +25,7 @@ const PostForm = ({
   initialTags = [],
   submitLabel,
   submittingLabel,
+  cancelHref,
   onSubmit,
 }: PostFormProps) => {
   const [title, setTitle] = useState(initialTitle)
@@ -156,9 +159,16 @@ const PostForm = ({
 
         {formError && <p className="auth-form-error">{formError}</p>}
 
-        <button type="submit" className="button primary" disabled={submitting}>
-          {submitting ? submittingLabel : submitLabel}
-        </button>
+        <div id="post-form-actions">
+          {cancelHref && (
+            <Link to={cancelHref} className="button">
+              Cancel
+            </Link>
+          )}
+          <button type="submit" className="button primary" disabled={submitting}>
+            {submitting ? submittingLabel : submitLabel}
+          </button>
+        </div>
       </form>
     </section>
   )
