@@ -42,7 +42,7 @@ const CreatePost = () => {
       }
     }
 
-    navigate('/profile')
+    navigate(`/posts/${data.id}`)
     return { error: null }
   }
 

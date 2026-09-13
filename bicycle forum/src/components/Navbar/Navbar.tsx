@@ -44,7 +44,7 @@ const Navbar = () => {
       </nav>
       {profile && <SearchBar />}
       {profile && (
-        <NavLink to="/profile" id="nav-avatar" aria-label="Your profile" className={navLinkClass}>
+        <NavLink to={`/users/${profile.username}`} id="nav-avatar" aria-label="Your profile" className={navLinkClass}>
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" />
           ) : (

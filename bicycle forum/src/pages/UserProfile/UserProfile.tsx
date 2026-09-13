@@ -58,19 +58,21 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
   return (
     <section id="user-profile-page">
       <div id="user-profile-header">
-        <div id="user-profile-avatar">
-          {data.avatarUrl ? (
-            <img src={data.avatarUrl} alt="" />
-          ) : (
-            <span id="user-profile-avatar-fallback">{data.username.slice(0, 1).toUpperCase()}</span>
-          )}
+        <div id="user-profile-avatar-column">
+          <div id="user-profile-avatar">
+            {data.avatarUrl ? (
+              <img src={data.avatarUrl} alt="" />
+            ) : (
+              <span id="user-profile-avatar-fallback">{data.username.slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+          <p className="profile-joined">Joined {formatDateTime(data.createdAt)}</p>
         </div>
         <div id="user-profile-identity">
           <h1>{data.username}</h1>
           <p id="user-profile-subtitle">
             {data.firstName} {data.lastName} · {data.reputation} reputation
           </p>
-          <p id="user-profile-joined">Joined {formatDateTime(data.createdAt)}</p>
         </div>
         {isOwnProfile && (
           <Link to="/profile" className="button primary" id="user-profile-edit-link">
@@ -79,32 +81,37 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
         )}
       </div>
 
-      <div className="profile-stats">
-        <div className="profile-stat">
-          <span className="profile-stat-value">{data.postCount}</span>
-          <span className="profile-stat-label">Posts</span>
+      <div className={data.badges.length > 0 ? 'profile-grid-2' : undefined}>
+        <div className="profile-stats profile-box">
+          <h2>Stats</h2>
+          <div className="profile-stats-row">
+            <div className="profile-stat">
+              <span className="profile-stat-value">{data.postCount}</span>
+              <span className="profile-stat-label">Posts</span>
+            </div>
+            <div className="profile-stat">
+              <span className="profile-stat-value">{data.commentCount}</span>
+              <span className="profile-stat-label">Comments</span>
+            </div>
+          </div>
         </div>
-        <div className="profile-stat">
-          <span className="profile-stat-value">{data.commentCount}</span>
-          <span className="profile-stat-label">Comments</span>
-        </div>
+
+        {data.badges.length > 0 && (
+          <div className="profile-badges profile-box">
+            <h2>Badges</h2>
+            <ul>
+              {data.badges.map((badge) => (
+                <li key={badge.id} title={badge.description}>
+                  <span className="badge-pill">{badge.name}</span>
+                  <span className="user-badge-date">Earned {formatDateTime(badge.awardedAt)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
-      {data.badges.length > 0 && (
-        <div className="profile-badges">
-          <h2>Badges</h2>
-          <ul>
-            {data.badges.map((badge) => (
-              <li key={badge.id} title={badge.description}>
-                <span className="badge-pill">{badge.name}</span>
-                <span className="user-badge-date">Earned {formatDateTime(badge.awardedAt)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div id="user-profile-posts">
+      <div id="user-profile-posts" className="profile-box">
         <h2>Posts</h2>
         {data.posts.length === 0 ? (
           <p>{data.username} hasn&apos;t created any posts yet.</p>

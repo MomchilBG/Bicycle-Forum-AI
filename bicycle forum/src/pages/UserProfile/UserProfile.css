@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 32px;
   padding: 40px 32px;
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   width: 100%;
   text-align: left;
@@ -16,13 +16,21 @@
 
 #user-profile-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
 
   @media (max-width: 480px) {
     flex-wrap: wrap;
     gap: 16px;
   }
+}
+
+#user-profile-avatar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 #user-profile-avatar {
@@ -62,11 +70,11 @@
 }
 
 #user-profile-identity h1 {
-  margin: 0;
+  margin: -8px 0 0;
+  line-height: 1.1;
 }
 
-#user-profile-subtitle,
-#user-profile-joined {
+#user-profile-subtitle {
   margin: 0;
   color: var(--text);
   font-size: 14px;

@@ -1,17 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth, type Profile as ProfileRow } from '../../auth/AuthContext'
 import { updateProfileName, uploadAvatar } from '../../lib/profile'
-import { getPostsByAuthor } from '../../lib/posts'
-import type { PostSummary } from '../../lib/posts'
-import { getBadgesForUser, getCommentCountForUser } from '../../lib/userProfile'
-import type { UserBadge } from '../../lib/userProfile'
 import { supabase } from '../../lib/supabaseClient'
-import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import AuthField from '../../components/AuthField/AuthField'
-import { formatDateTime } from '../../lib/formatDate'
+import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
 import '../auth.css'
 import '../profileShared.css'
 import './Profile.css'
@@ -28,6 +23,7 @@ const Profile = () => {
 // fields initialize from it directly instead of syncing in via an effect.
 const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const { refreshProfile, signOut } = useAuth()
+  const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [firstName, setFirstName] = useState(profile.first_name)
@@ -42,33 +38,14 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
 
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
-  const [posts, setPosts] = useState<PostSummary[]>([])
-  const [postsLoading, setPostsLoading] = useState(true)
-  const [commentCount, setCommentCount] = useState(0)
-  const [badges, setBadges] = useState<UserBadge[]>([])
-
-  useEffect(() => {
-    let cancelled = false
-
-    Promise.all([
-      getPostsByAuthor(profile.id, profile.username),
-      getCommentCountForUser(profile.id),
-      getBadgesForUser(profile.id),
-    ]).then(([postsResult, commentCountResult, badgesResult]) => {
-      if (cancelled) return
-      setPosts(postsResult)
-      setCommentCount(commentCountResult)
-      setBadges(badgesResult)
-      setPostsLoading(false)
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [profile.id, profile.username])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -128,83 +105,105 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
     setPasswordSuccess('Password updated.')
   }
 
-  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setAvatarError(null)
+    setSelectedAvatarFile(event.target.files?.[0] ?? null)
+  }
+
+  const handleApplyAvatar = async () => {
+    if (!selectedAvatarFile) return
     setAvatarError(null)
     setUploadingAvatar(true)
 
-    const result = await uploadAvatar(profile.id, file)
+    const result = await uploadAvatar(profile.id, selectedAvatarFile)
     setUploadingAvatar(false)
-    if (fileInputRef.current) fileInputRef.current.value = ''
 
     if ('error' in result) {
       setAvatarError(result.error)
       return
     }
 
+    setSelectedAvatarFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     await refreshProfile()
+  }
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false)
+    setDeletePassword('')
+    setDeleteError(null)
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null)
+    setDeleting(true)
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: deletePassword,
+    })
+    if (signInError) {
+      setDeleteError('Incorrect password.')
+      setDeleting(false)
+      return
+    }
+
+    const { error: rpcError } = await supabase.rpc('delete_own_account')
+    if (rpcError) {
+      setDeleteError(rpcError.message)
+      setDeleting(false)
+      return
+    }
+
+    await supabase.auth.signOut()
+    navigate('/')
   }
 
   return (
     <section id="profile-page">
-      <div id="profile-header">
-        <button
-          type="button"
-          id="profile-avatar"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadingAvatar}
-          aria-label="Change profile photo"
-          title="Change profile photo"
-        >
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="" />
-          ) : (
-            <span id="profile-avatar-fallback">{profile.username.slice(0, 1).toUpperCase()}</span>
-          )}
-          <span id="profile-avatar-overlay">{uploadingAvatar ? 'Uploading…' : 'Change photo'}</span>
-        </button>
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} hidden />
-        <div id="profile-identity">
-          <h1>{profile.username}</h1>
-          <p className="profile-subtitle">
-            {profile.first_name} {profile.last_name} · {profile.reputation} reputation
-          </p>
+      <div className="profile-box" id="profile-photo-box">
+        <h2>Profile photo</h2>
+        <div id="profile-photo-row">
+          <div id="profile-avatar">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" />
+            ) : (
+              <span id="profile-avatar-fallback">{profile.username.slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+          <div id="profile-photo-actions">
+            <div id="profile-photo-buttons">
+              <button type="button" className="button" onClick={() => fileInputRef.current?.click()}>
+                Select image
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFileChange} hidden />
+              <button
+                type="button"
+                className="button primary"
+                onClick={() => void handleApplyAvatar()}
+                disabled={!selectedAvatarFile || uploadingAvatar}
+              >
+                {uploadingAvatar ? 'Applying…' : 'Apply'}
+              </button>
+            </div>
+            {selectedAvatarFile && <p className="profile-subtitle">{selectedAvatarFile.name}</p>}
+            {avatarError && <p className="auth-form-error">{avatarError}</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="profile-grid-2">
+        <div className="profile-box">
+          <h2>Username</h2>
+          <p className="profile-subtitle">{profile.username}</p>
+        </div>
+        <div className="profile-box">
+          <h2>Email</h2>
           <p className="profile-subtitle">{profile.email}</p>
-          <p className="profile-subtitle">Joined {formatDateTime(profile.created_at)}</p>
-          {avatarError && <span className="auth-error">{avatarError}</span>}
-        </div>
-        <button type="button" id="profile-logout" onClick={() => void signOut()}>
-          Log out
-        </button>
-      </div>
-
-      <div className="profile-stats">
-        <div className="profile-stat">
-          <span className="profile-stat-value">{posts.length}</span>
-          <span className="profile-stat-label">Posts</span>
-        </div>
-        <div className="profile-stat">
-          <span className="profile-stat-value">{commentCount}</span>
-          <span className="profile-stat-label">Comments</span>
         </div>
       </div>
 
-      {badges.length > 0 && (
-        <div className="profile-badges">
-          <h2>Badges</h2>
-          <ul>
-            {badges.map((badge) => (
-              <li key={badge.id} title={badge.description}>
-                <span className="badge-pill">{badge.name}</span>
-                <span className="user-badge-date">Earned {formatDateTime(badge.awardedAt)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div id="profile-panels">
+      <div className="profile-grid-2">
         <form className="profile-card" onSubmit={handleNameSubmit}>
           <h2>Your name</h2>
           <AuthField htmlFor="firstName" label="First name">
@@ -259,30 +258,37 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
         </form>
       </div>
 
-      <div id="profile-posts">
-        <div id="profile-posts-header">
-          <h2>Your posts</h2>
-          {!profile.is_blocked && (
-            <Link to="/posts/new" className="button primary">
-              New post
-            </Link>
-          )}
-        </div>
-        {profile.is_blocked && (
-          <p className="auth-form-error">Your account has been blocked from posting and commenting.</p>
-        )}
-        {postsLoading ? (
-          <p>Loading…</p>
-        ) : posts.length === 0 ? (
-          <p>You haven&apos;t created any posts yet.</p>
-        ) : (
-          <ul>
-            {posts.map((post) => (
-              <PostSummaryCard key={post.id} post={post} />
-            ))}
-          </ul>
-        )}
+      <div id="profile-danger-zone">
+        <button type="button" id="profile-logout" onClick={() => void signOut()}>
+          Log out
+        </button>
+        <button type="button" className="button danger" onClick={() => setShowDeleteConfirm(true)}>
+          Delete profile
+        </button>
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete your account?"
+          message="This permanently deletes your profile, posts, and comments. Enter your password to confirm."
+          confirmLabel="Delete my account"
+          danger
+          confirming={deleting}
+          confirmDisabled={!deletePassword}
+          error={deleteError}
+          onConfirm={() => void handleDeleteAccount()}
+          onCancel={closeDeleteConfirm}
+        >
+          <AuthField htmlFor="deletePassword" label="Password">
+            <PasswordInput
+              id="deletePassword"
+              value={deletePassword}
+              onChange={(event) => setDeletePassword(event.target.value)}
+              autoComplete="current-password"
+            />
+          </AuthField>
+        </ConfirmDialog>
+      )}
     </section>
   )
 }

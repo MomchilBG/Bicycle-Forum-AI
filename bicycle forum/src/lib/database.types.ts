@@ -337,6 +337,7 @@ export type Database = {
         Args: { target_user: string }
         Returns: undefined
       }
+      delete_own_account: { Args: never; Returns: undefined }
       email_for_username: { Args: { p_username: string }; Returns: string }
       is_admin: { Args: { uid?: string }; Returns: boolean }
       is_blocked: { Args: { uid?: string }; Returns: boolean }

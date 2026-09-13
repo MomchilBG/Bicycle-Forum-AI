@@ -14,6 +14,7 @@ import type { Badge, CommentItem, PostDetail } from '../../lib/postDetail'
 import { deletePost } from '../../lib/posts'
 import { tagSearchHref } from '../../lib/search'
 import { formatDateTime } from '../../lib/formatDate'
+import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
 import '../auth.css'
 import './PostView.css'
 
@@ -171,6 +172,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
 
   const [deletingPost, setDeletingPost] = useState(false)
   const [postActionError, setPostActionError] = useState<string | null>(null)
+  const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -216,8 +218,13 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
     setVoting(false)
   }
 
+  const closeDeletePostConfirm = () => {
+    setShowDeletePostConfirm(false)
+    setPostActionError(null)
+  }
+
   const handleDeletePost = async () => {
-    if (!window.confirm('Delete this post? This cannot be undone.')) return
+    if (!profile) return
     setDeletingPost(true)
     setPostActionError(null)
 
@@ -229,7 +236,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
       return
     }
 
-    navigate('/profile')
+    navigate(`/users/${profile.username}`)
   }
 
   const handleCommentSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -444,52 +451,82 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
           </ul>
         )}
 
-        {isOwnPost && !profile?.is_blocked && (
-          <div id="post-actions">
-            <Link to={`/posts/${postId}/edit`} className="action-link">
-              Edit
-            </Link>
-            <button type="button" className="action-link danger" onClick={handleDeletePost} disabled={deletingPost}>
-              {deletingPost ? 'Deleting…' : 'Delete'}
+        <div id="post-vote-actions">
+          <div id="post-votes">
+            <button
+              type="button"
+              className={post.myVote === 1 ? 'active' : ''}
+              onClick={() => handleVote(1)}
+              disabled={!canVote || voting}
+              aria-label="Upvote"
+              title={isOwnPost ? "You can't vote on your own post" : 'Upvote'}
+            >
+              ▲
             </button>
+            <div id="post-vote-score" tabIndex={0}>
+              {post.upvoteCount - post.downvoteCount}
+              <span id="post-vote-tooltip">
+                {post.upvoteCount} upvote{post.upvoteCount === 1 ? '' : 's'} · {post.downvoteCount} downvote
+                {post.downvoteCount === 1 ? '' : 's'}
+              </span>
+            </div>
+            <button
+              type="button"
+              className={post.myVote === -1 ? 'active' : ''}
+              onClick={() => handleVote(-1)}
+              disabled={!canVote || voting}
+              aria-label="Downvote"
+              title={isOwnPost ? "You can't vote on your own post" : 'Downvote'}
+            >
+              ▼
+            </button>
+            {!user && <span className="post-view-hint">Log in to vote.</span>}
+            {voteError && <span className="auth-error">{voteError}</span>}
           </div>
-        )}
-        {postActionError && <p className="auth-form-error">{postActionError}</p>}
 
-        <div id="post-votes">
-          <button
-            type="button"
-            className={post.myVote === 1 ? 'active' : ''}
-            onClick={() => handleVote(1)}
-            disabled={!canVote || voting}
-            aria-label="Upvote"
-            title={isOwnPost ? "You can't vote on your own post" : 'Upvote'}
-          >
-            ▲
-          </button>
-          <div id="post-vote-score" tabIndex={0}>
-            {post.upvoteCount - post.downvoteCount}
-            <span id="post-vote-tooltip">
-              {post.upvoteCount} upvote{post.upvoteCount === 1 ? '' : 's'} · {post.downvoteCount} downvote
-              {post.downvoteCount === 1 ? '' : 's'}
-            </span>
-          </div>
-          <button
-            type="button"
-            className={post.myVote === -1 ? 'active' : ''}
-            onClick={() => handleVote(-1)}
-            disabled={!canVote || voting}
-            aria-label="Downvote"
-            title={isOwnPost ? "You can't vote on your own post" : 'Downvote'}
-          >
-            ▼
-          </button>
-          {!user && <span className="post-view-hint">Log in to vote.</span>}
-          {voteError && <span className="auth-error">{voteError}</span>}
+          {isOwnPost && !profile?.is_blocked && (
+            <div id="post-actions">
+              <Link to={`/posts/${postId}/edit`} className="action-link">
+                Edit
+              </Link>
+              <button
+                type="button"
+                className="action-link danger"
+                onClick={() => setShowDeletePostConfirm(true)}
+                disabled={deletingPost}
+              >
+                {deletingPost ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          )}
         </div>
 
         <section id="post-comments">
           <h2>Comments ({comments.length})</h2>
+
+          <div id="comment-composer">
+            {canComment ? (
+              <form id="comment-form" onSubmit={handleCommentSubmit}>
+                <textarea
+                  value={commentText}
+                  onChange={(event) => setCommentText(event.target.value)}
+                  placeholder="Write a comment…"
+                  rows={3}
+                  maxLength={8192}
+                />
+                {commentError && <p className="auth-form-error">{commentError}</p>}
+                <button type="submit" className="button primary" disabled={submittingComment}>
+                  {submittingComment ? 'Posting…' : 'Comment'}
+                </button>
+              </form>
+            ) : !user ? (
+              <p className="post-view-hint">
+                <Link to="/login">Log in</Link> to leave a comment.
+              </p>
+            ) : profile?.is_blocked ? (
+              <p className="auth-form-error">You&apos;ve been blocked from commenting.</p>
+            ) : null}
+          </div>
 
           {topLevelComments.length === 0 ? (
             <p>No comments yet.</p>
@@ -535,30 +572,21 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
               ))}
             </ul>
           )}
-
-          {canComment ? (
-            <form id="comment-form" onSubmit={handleCommentSubmit}>
-              <textarea
-                value={commentText}
-                onChange={(event) => setCommentText(event.target.value)}
-                placeholder="Write a comment…"
-                rows={3}
-                maxLength={8192}
-              />
-              {commentError && <p className="auth-form-error">{commentError}</p>}
-              <button type="submit" className="button primary" disabled={submittingComment}>
-                {submittingComment ? 'Posting…' : 'Comment'}
-              </button>
-            </form>
-          ) : !user ? (
-            <p className="post-view-hint">
-              <Link to="/login">Log in</Link> to leave a comment.
-            </p>
-          ) : profile?.is_blocked ? (
-            <p className="auth-form-error">You&apos;ve been blocked from commenting.</p>
-          ) : null}
         </section>
       </article>
+
+      {showDeletePostConfirm && (
+        <ConfirmDialog
+          title="Delete this post?"
+          message="This cannot be undone."
+          confirmLabel="Delete post"
+          danger
+          confirming={deletingPost}
+          error={postActionError}
+          onConfirm={() => void handleDeletePost()}
+          onCancel={closeDeletePostConfirm}
+        />
+      )}
     </section>
   )
 }

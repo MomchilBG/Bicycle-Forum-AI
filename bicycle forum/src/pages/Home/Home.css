@@ -67,10 +67,36 @@
   }
 }
 
+/* <button> elements (unlike <a>) get the browser's native, color-scheme-linked
+   button chrome by default - which tracks the OS theme, not our data-theme
+   toggle, so it can go dark-on-dark or light-on-light and become unreadable
+   whenever the two disagree. Give real buttons an explicit background so
+   they never fall back to that native chrome. */
+button.button {
+  background: var(--code-bg);
+  font: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
 .button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.button.danger {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
+
+  &:hover {
+    border-color: var(--danger);
+  }
 }
 
 #features {
