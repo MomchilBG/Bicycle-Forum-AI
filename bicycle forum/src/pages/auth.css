@@ -35,6 +35,10 @@
   color: var(--text-h);
 }
 
+.auth-required-mark {
+  color: var(--danger);
+}
+
 .auth-field input {
   padding: 10px 12px;
   border: 1px solid var(--border);

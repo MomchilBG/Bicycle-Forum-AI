@@ -27,7 +27,7 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [firstName, setFirstName] = useState(profile.first_name)
-  const [lastName, setLastName] = useState(profile.last_name)
+  const [lastName, setLastName] = useState(profile.last_name ?? '')
   const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState<string | null>(null)
   const [savingName, setSavingName] = useState(false)
@@ -59,13 +59,13 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
       setNameError('First name must be 4-32 characters.')
       return
     }
-    if (!NAME_PATTERN.test(trimmedLast)) {
+    if (trimmedLast && !NAME_PATTERN.test(trimmedLast)) {
       setNameError('Last name must be 4-32 characters.')
       return
     }
 
     setSavingName(true)
-    const { error } = await updateProfileName(profile.id, trimmedFirst, trimmedLast)
+    const { error } = await updateProfileName(profile.id, trimmedFirst, trimmedLast || null)
     setSavingName(false)
 
     if (error) {

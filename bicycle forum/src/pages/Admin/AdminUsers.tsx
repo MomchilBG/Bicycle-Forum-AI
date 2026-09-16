@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthContext'
 import { searchAdminUsers, setUserBlocked } from '../../lib/admin'
 import type { AdminUserRow } from '../../lib/admin'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
+import { formatFullName } from '../../lib/formatName'
 import './Admin.css'
 
 const adminTabClass = ({ isActive }: { isActive: boolean }) => isActive ? 'active' : undefined
@@ -105,7 +106,7 @@ const AdminUsers = () => {
                   {user.username}
                 </Link>
                 <span className="admin-user-meta">
-                  {user.firstName} {user.lastName} · {user.email}
+                  {formatFullName(user.firstName, user.lastName)} · {user.email}
                 </span>
               </div>
               {user.isBlocked && <span className="admin-status-pill">Blocked</span>}

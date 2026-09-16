@@ -51,6 +51,19 @@ export const getTagsForPost = async (postId: string): Promise<string[]> => {
   return (tagRows ?? []).map((row) => row.name).sort()
 }
 
+// Admins can only remove a tag from a post, never add one (see migration 26)
+// - post_tags INSERT is author-only now, so this can't go through
+// replacePostTags()'s clear-and-reattach strategy, which would need to
+// re-insert every tag the admin *didn't* remove. A single targeted DELETE
+// only needs the (author-or-admin) post_tags DELETE policy instead.
+export const removeTagFromPost = async (postId: string, tagName: string): Promise<{ error: string | null }> => {
+  const { data: tag } = await supabase.from('tags').select('id').eq('name', tagName).maybeSingle()
+  if (!tag) return { error: null }
+
+  const { error } = await supabase.from('post_tags').delete().eq('post_id', postId).eq('tag_id', tag.id)
+  return { error: error?.message ?? null }
+}
+
 // Editing a post's tags: simplest correct approach is to clear the existing
 // links and reattach the new list, rather than diffing old vs new - post tag
 // lists are small, so the extra round trip isn't a real cost. Resolve the new

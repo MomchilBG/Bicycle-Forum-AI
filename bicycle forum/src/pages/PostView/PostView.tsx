@@ -15,6 +15,7 @@ import { deletePost } from '../../lib/posts'
 import { savePost, unsavePost } from '../../lib/savedPosts'
 import { tagSearchHref } from '../../lib/search'
 import { formatDateTime } from '../../lib/formatDate'
+import { formatFullName } from '../../lib/formatName'
 import { roleLabel } from '../../lib/publicProfiles'
 import type { PublicProfile } from '../../lib/publicProfiles'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
@@ -75,7 +76,7 @@ const CommentBody = ({
   onEditSubmit,
   onDelete,
 }: CommentBodyProps) => {
-  const wasEdited = comment.updatedAt !== comment.createdAt
+  const wasEdited = !comment.isDeleted && comment.updatedAt !== comment.createdAt
 
   return (
     <div className="comment-row">
@@ -113,7 +114,7 @@ const CommentBody = ({
           </form>
         ) : (
           <>
-            <p className="comment-content">{comment.content}</p>
+            <p className={comment.isDeleted ? 'comment-content comment-content-deleted' : 'comment-content'}>{comment.content}</p>
             <div className="comment-actions">
               {canReply && (
                 <button type="button" className="action-link" onClick={onStartReply}>
@@ -355,7 +356,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Delete this comment? This cannot be undone.')) return
+    if (!window.confirm('Delete this comment? Its content will be replaced with "[deleted]" and this cannot be undone.')) return
     setDeletingCommentId(commentId)
 
     const { error } = await deleteComment(commentId)
@@ -411,8 +412,8 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
       <CommentBody
         comment={comment}
         canReply={canReply && canComment}
-        canEdit={isOwnAndNotBlocked && !editLocked}
-        canDelete={isOwnAndNotBlocked}
+        canEdit={isOwnAndNotBlocked && !editLocked && !comment.isDeleted}
+        canDelete={isOwnAndNotBlocked && !comment.isDeleted}
         isEditing={editingCommentId === comment.id}
         editText={editText}
         editError={editError}
@@ -436,7 +437,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
             <AuthorAvatar author={post.author} />
             <div>
               <div className="post-author-name">
-                {post.author.firstName} {post.author.lastName}
+                {formatFullName(post.author.firstName, post.author.lastName)}
               </div>
               <div className="post-author-username">@{post.author.username}</div>
             </div>

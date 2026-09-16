@@ -7,6 +7,7 @@ import { getSavedPostCount, getSavedPostsByUser } from '../../lib/savedPosts'
 import type { PostSummary } from '../../lib/posts'
 import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
 import { formatDate, formatDateTime } from '../../lib/formatDate'
+import { formatFullName } from '../../lib/formatName'
 import { roleLabel } from '../../lib/publicProfiles'
 import '../profileShared.css'
 import './UserProfile.css'
@@ -116,7 +117,7 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
           <h1>{data.username}</h1>
           <p id="user-profile-subtitle">
             <span>
-              {data.firstName} {data.lastName} · Joined {formatDate(data.createdAt)}
+              {formatFullName(data.firstName, data.lastName)} · Joined {formatDate(data.createdAt)}
             </span>
             <span className={`badge-pill role-pill role-${data.role}`}>{roleLabel(data.role)}</span>
             {data.isBlocked && <span className="badge-pill blocked-pill">Blocked</span>}

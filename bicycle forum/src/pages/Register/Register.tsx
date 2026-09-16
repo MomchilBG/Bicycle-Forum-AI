@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import AuthField from '../../components/AuthField/AuthField'
+import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
 import '../auth.css'
 
 interface FormValues {
@@ -31,7 +32,7 @@ const validate = (values: FormValues): FormErrors => {
   if (!NAME_PATTERN.test(values.firstName.trim())) {
     errors.firstName = 'First name must be 4-32 characters.'
   }
-  if (!NAME_PATTERN.test(values.lastName.trim())) {
+  if (values.lastName.trim() && !NAME_PATTERN.test(values.lastName.trim())) {
     errors.lastName = 'Last name must be 4-32 characters.'
   }
   if (!USERNAME_PATTERN.test(values.username)) {
@@ -63,7 +64,7 @@ const Register = () => {
   const [touched, setTouched] = useState<Touched>({})
   const [usernameTakenError, setUsernameTakenError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [showConfirmEmailDialog, setShowConfirmEmailDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // Derived from the latest values on every render, so an error clears the
@@ -88,7 +89,6 @@ const Register = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
-    setSuccessMessage(null)
     setTouched({
       firstName: true,
       lastName: true,
@@ -119,7 +119,7 @@ const Register = () => {
       options: {
         data: {
           first_name: values.firstName.trim(),
-          last_name: values.lastName.trim(),
+          last_name: values.lastName.trim() || null,
           username: values.username,
         },
       },
@@ -146,7 +146,7 @@ const Register = () => {
       return
     }
 
-    setSuccessMessage('Check your email to confirm your account before logging in.')
+    setShowConfirmEmailDialog(true)
   }
 
   return (
@@ -154,7 +154,7 @@ const Register = () => {
       <form id="auth-card" onSubmit={handleSubmit} noValidate>
         <h1>Register</h1>
 
-        <AuthField htmlFor="firstName" label="First name" error={fieldError('firstName')}>
+        <AuthField htmlFor="firstName" label="First name" required error={fieldError('firstName')}>
           <input
             id="firstName"
             value={values.firstName}
@@ -172,13 +172,13 @@ const Register = () => {
             value={values.lastName}
             onChange={(event) => updateField('lastName', event.target.value)}
             onBlur={() => markTouched('lastName')}
-            placeholder="4-32 characters"
+            placeholder="Optional, 4-32 characters"
             maxLength={32}
             autoComplete="family-name"
           />
         </AuthField>
 
-        <AuthField htmlFor="username" label="Username" error={fieldError('username')}>
+        <AuthField htmlFor="username" label="Username" required error={fieldError('username')}>
           <input
             id="username"
             value={values.username}
@@ -190,7 +190,7 @@ const Register = () => {
           />
         </AuthField>
 
-        <AuthField htmlFor="email" label="Email" error={fieldError('email')}>
+        <AuthField htmlFor="email" label="Email" required error={fieldError('email')}>
           <input
             id="email"
             type="email"
@@ -202,7 +202,7 @@ const Register = () => {
           />
         </AuthField>
 
-        <AuthField htmlFor="password" label="Password" error={fieldError('password')}>
+        <AuthField htmlFor="password" label="Password" required error={fieldError('password')}>
           <PasswordInput
             id="password"
             value={values.password}
@@ -213,7 +213,7 @@ const Register = () => {
           />
         </AuthField>
 
-        <AuthField htmlFor="confirmPassword" label="Confirm password" error={fieldError('confirmPassword')}>
+        <AuthField htmlFor="confirmPassword" label="Confirm password" required error={fieldError('confirmPassword')}>
           <PasswordInput
             id="confirmPassword"
             value={values.confirmPassword}
@@ -225,7 +225,6 @@ const Register = () => {
         </AuthField>
 
         {formError && <p className="auth-form-error">{formError}</p>}
-        {successMessage && <p className="auth-success">{successMessage}</p>}
 
         <button type="submit" className="button primary" disabled={submitting}>
           {submitting ? 'Creating account…' : 'Create account'}
@@ -235,6 +234,17 @@ const Register = () => {
           Already have an account? <Link to="/login">Log in</Link>
         </p>
       </form>
+
+      {showConfirmEmailDialog && (
+        <ConfirmDialog
+          title="Check your email"
+          message={`We sent a confirmation link to ${values.email.trim()}. Confirm your account, then log in.`}
+          confirmLabel="Go to log in"
+          cancelLabel="Close"
+          onConfirm={() => navigate('/login')}
+          onCancel={() => setShowConfirmEmailDialog(false)}
+        />
+      )}
     </section>
   )
 }

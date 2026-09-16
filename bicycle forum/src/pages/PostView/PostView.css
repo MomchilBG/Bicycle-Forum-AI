@@ -357,6 +357,11 @@
   white-space: pre-wrap;
 }
 
+.comment-content-deleted {
+  color: var(--text);
+  font-style: italic;
+}
+
 .comment-actions {
   display: flex;
   gap: 12px;

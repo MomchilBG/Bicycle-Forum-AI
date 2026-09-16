@@ -5,7 +5,7 @@ export interface AdminUserRow {
   id: string
   username: string
   firstName: string
-  lastName: string
+  lastName: string | null
   email: string
   isBlocked: boolean
   createdAt: string

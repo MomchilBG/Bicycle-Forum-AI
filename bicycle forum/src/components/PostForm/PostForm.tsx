@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 import '../../pages/auth.css'
 import './PostForm.css'
 
-const TITLE_PATTERN = /^.{16,64}$/
-const CONTENT_PATTERN = /^[\s\S]{32,8192}$/
+const TITLE_PATTERN = /^.{4,64}$/
+const CONTENT_PATTERN = /^[\s\S]{16,8192}$/
 
 export interface PostFormProps {
   heading: string
@@ -78,11 +78,11 @@ const PostForm = ({
     const trimmedContent = content.trim()
 
     if (!TITLE_PATTERN.test(trimmedTitle)) {
-      setFormError('Title must be 16-64 characters.')
+      setFormError('Title must be 4-64 characters.')
       return
     }
     if (!CONTENT_PATTERN.test(trimmedContent)) {
-      setFormError('Content must be 32-8192 characters.')
+      setFormError('Content must be 16-8192 characters.')
       return
     }
 
@@ -104,7 +104,7 @@ const PostForm = ({
             id="title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="16-64 characters"
+            placeholder="4-64 characters"
             maxLength={64}
           />
         </div>
@@ -115,7 +115,7 @@ const PostForm = ({
             id="content"
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="32-8192 characters"
+            placeholder="16-8192 characters"
             rows={10}
             maxLength={8192}
           />

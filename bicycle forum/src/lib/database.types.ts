@@ -50,6 +50,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_deleted: boolean
           parent_comment_id: string | null
           post_id: string
           updated_at: string
@@ -59,6 +60,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_deleted?: boolean
           parent_comment_id?: string | null
           post_id: string
           updated_at?: string
@@ -68,6 +70,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_deleted?: boolean
           parent_comment_id?: string | null
           post_id?: string
           updated_at?: string
@@ -181,7 +184,7 @@ export type Database = {
           first_name: string
           id: string
           is_blocked: boolean
-          last_name: string
+          last_name: string | null
           phone_number: string | null
           reputation: number
           role: Database["public"]["Enums"]["user_role"]
@@ -195,7 +198,7 @@ export type Database = {
           first_name: string
           id: string
           is_blocked?: boolean
-          last_name: string
+          last_name?: string | null
           phone_number?: string | null
           reputation?: number
           role?: Database["public"]["Enums"]["user_role"]
@@ -209,7 +212,7 @@ export type Database = {
           first_name?: string
           id?: string
           is_blocked?: boolean
-          last_name?: string
+          last_name?: string | null
           phone_number?: string | null
           reputation?: number
           role?: Database["public"]["Enums"]["user_role"]

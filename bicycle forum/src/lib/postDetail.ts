@@ -33,6 +33,7 @@ export interface CommentItem {
   author: PublicProfile
   badges: Badge[]
   parentCommentId: string | null
+  isDeleted: boolean
 }
 
 const UNKNOWN_AUTHOR: PublicProfile = {
@@ -119,7 +120,7 @@ export const getPostDetail = async (postId: string, viewerId: string | null): Pr
 export const getComments = async (postId: string): Promise<CommentItem[]> => {
   const { data: comments, error } = await supabase
     .from('comments')
-    .select('id, content, created_at, updated_at, author_id, parent_comment_id')
+    .select('id, content, created_at, updated_at, author_id, parent_comment_id, is_deleted')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
@@ -136,6 +137,7 @@ export const getComments = async (postId: string): Promise<CommentItem[]> => {
     author: profiles.get(comment.author_id) ?? { ...UNKNOWN_AUTHOR, id: comment.author_id },
     badges: badgesByUser.get(comment.author_id) ?? [],
     parentCommentId: comment.parent_comment_id,
+    isDeleted: comment.is_deleted,
   }))
 }
 
@@ -143,7 +145,13 @@ export const createComment = (postId: string, authorId: string, content: string,
 
 export const updateComment = (commentId: string, content: string) => supabase.from('comments').update({ content }).eq('id', commentId)
 
-export const deleteComment = (commentId: string) => supabase.from('comments').delete().eq('id', commentId)
+export const DELETED_COMMENT_PLACEHOLDER = '[deleted]'
+
+// Soft-delete: replaces the content instead of removing the row, so replies
+// keep their place in the thread rather than being orphaned by the
+// ON DELETE SET NULL cascade on parent_comment_id (see migration 16/19).
+export const deleteComment = (commentId: string) =>
+  supabase.from('comments').update({ content: DELETED_COMMENT_PLACEHOLDER, is_deleted: true }).eq('id', commentId)
 
 // One vote per (voter, post): insert if none yet, delete to toggle the same
 // value off, or update when switching from up- to downvote (or vice versa).

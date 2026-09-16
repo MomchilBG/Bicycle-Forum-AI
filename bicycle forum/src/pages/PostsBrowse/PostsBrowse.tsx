@@ -5,6 +5,7 @@ import { describeSearchQuery, parseSearchQuery, searchPosts, searchUsers } from 
 import type { SortOption } from '../../lib/search'
 import type { PostSummary } from '../../lib/posts'
 import type { PublicProfile } from '../../lib/publicProfiles'
+import { formatFullName } from '../../lib/formatName'
 import './PostsBrowse.css'
 
 const sortLinkClass = (current: SortOption, target: SortOption) => current === target ? 'active' : undefined
@@ -74,7 +75,7 @@ const UserSearchResults = ({ terms, display }: { terms: string[]; display: strin
                   {user.username}
                 </Link>
                 <span className="user-result-meta">
-                  {user.firstName} {user.lastName} · {user.reputation} reputation
+                  {formatFullName(user.firstName, user.lastName)} · {user.reputation} reputation
                 </span>
               </div>
             </li>

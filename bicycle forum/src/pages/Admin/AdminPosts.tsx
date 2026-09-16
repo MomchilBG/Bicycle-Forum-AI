@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent, KeyboardEvent } from 'react'
+import type { FormEvent } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { parseSearchQuery, searchPosts } from '../../lib/search'
 import type { SortOption } from '../../lib/search'
 import type { PostSummary } from '../../lib/posts'
 import { deletePost } from '../../lib/posts'
-import { getComments, deleteComment } from '../../lib/postDetail'
+import { getComments, deleteComment, DELETED_COMMENT_PLACEHOLDER } from '../../lib/postDetail'
 import type { CommentItem } from '../../lib/postDetail'
-import { getTagsForPost, replacePostTags } from '../../lib/tags'
+import { getTagsForPost, removeTagFromPost } from '../../lib/tags'
 import { formatDateTime } from '../../lib/formatDate'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
 import './Admin.css'
@@ -19,9 +19,9 @@ interface TagModalState {
   postId: string
   title: string
   tags: string[]
-  // getTagsForPost() resolves after the modal opens with tags: [] - without
-  // this, saving before it resolves would replace the post's real tags with
-  // an empty list. Gates the Save button until the real tags are in.
+  // getTagsForPost() resolves after the modal opens with tags: [] - this
+  // tells the "Loading tags…" placeholder apart from a post that genuinely
+  // has none.
   loaded: boolean
 }
 
@@ -46,11 +46,11 @@ const AdminPosts = () => {
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const [tagModal, setTagModal] = useState<TagModalState | null>(null)
-  const [tagInput, setTagInput] = useState('')
   const [tagError, setTagError] = useState<string | null>(null)
-  const [savingTags, setSavingTags] = useState(false)
+  const [removingTag, setRemovingTag] = useState<string | null>(null)
 
   const [commentsModal, setCommentsModal] = useState<CommentsModalState | null>(null)
+  const [deleteCommentTarget, setDeleteCommentTarget] = useState<CommentItem | null>(null)
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
   const [commentsError, setCommentsError] = useState<string | null>(null)
 
@@ -116,58 +116,25 @@ const AdminPosts = () => {
 
   const openTagModal = async (post: PostSummary) => {
     setTagModal({ postId: post.id, title: post.title, tags: [], loaded: false })
-    setTagInput('')
     setTagError(null)
     const tags = await getTagsForPost(post.id)
     setTagModal((current) => (current && current.postId === post.id ? { ...current, tags, loaded: true } : current))
   }
 
-  const addTag = () => {
+  const removeTag = async (tag: string) => {
     if (!tagModal) return
-    const trimmed = tagInput.replace(/[_\s]+/g, ' ').trim().toLowerCase()
-    if (!trimmed) return
-
-    if (trimmed.length > 32) {
-      setTagError('Tags must be 32 characters or fewer.')
-      return
-    }
-    if (tagModal.tags.includes(trimmed)) {
-      setTagError('That tag is already added.')
-      setTagInput('')
-      return
-    }
-
-    setTagModal({ ...tagModal, tags: [...tagModal.tags, trimmed] })
-    setTagInput('')
-    setTagError(null)
-  }
-
-  const removeTag = (tag: string) => {
-    if (!tagModal) return
-    setTagModal({ ...tagModal, tags: tagModal.tags.filter((existing) => existing !== tag) })
-  }
-
-  const handleTagInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      addTag()
-    }
-  }
-
-  const confirmTags = async () => {
-    if (!tagModal || !tagModal.loaded) return
-    setSavingTags(true)
+    setRemovingTag(tag)
     setTagError(null)
 
-    const { error } = await replacePostTags(tagModal.postId, tagModal.tags)
-    setSavingTags(false)
+    const { error } = await removeTagFromPost(tagModal.postId, tag)
+    setRemovingTag(null)
 
     if (error) {
       setTagError(error)
       return
     }
 
-    setTagModal(null)
+    setTagModal((current) => (current ? { ...current, tags: current.tags.filter((existing) => existing !== tag) } : current))
   }
 
   const openCommentsModal = async (post: PostSummary) => {
@@ -177,30 +144,36 @@ const AdminPosts = () => {
     setCommentsModal((current) => (current && current.postId === post.id ? { ...current, comments, loaded: true } : current))
   }
 
-  // Deleting a comment orphans (not deletes) its replies - they become
-  // top-level comments, per the ON DELETE SET NULL cascade documented in
-  // migration 16/19 - so refetch rather than filtering the deleted id out
-  // locally, which would incorrectly hide its replies too.
-  const handleDeleteComment = async (commentId: string) => {
-    if (!commentsModal) return
-    if (!window.confirm("Delete this comment? Any replies to it will become top-level comments. This can't be undone.")) return
+  // Deleting a comment soft-deletes it (content replaced with "[deleted]",
+  // the row otherwise untouched) rather than removing it, so it's just a
+  // local patch here rather than a refetch - no reply gets reparented and
+  // the post's comment_count doesn't change.
+  const confirmDeleteComment = async () => {
+    if (!deleteCommentTarget) return
+    const commentId = deleteCommentTarget.id
 
     setDeletingCommentId(commentId)
     setCommentsError(null)
 
     const { error } = await deleteComment(commentId)
+    setDeletingCommentId(null)
 
     if (error) {
-      setDeletingCommentId(null)
       setCommentsError(error.message)
       return
     }
 
-    const postId = commentsModal.postId
-    const comments = await getComments(postId)
-    setDeletingCommentId(null)
-    setCommentsModal((current) => (current && current.postId === postId ? { ...current, comments } : current))
-    setPosts((current) => current.map((post) => (post.id === postId ? { ...post, commentCount: Math.max(post.commentCount - 1, 0) } : post)))
+    setCommentsModal((current) =>
+      current
+        ? {
+            ...current,
+            comments: current.comments.map((comment) =>
+              comment.id === commentId ? { ...comment, content: DELETED_COMMENT_PLACEHOLDER, isDeleted: true } : comment,
+            ),
+          }
+        : current,
+    )
+    setDeleteCommentTarget(null)
   }
 
   const hasMore = posts.length < totalCount
@@ -261,7 +234,7 @@ const AdminPosts = () => {
                     Comments
                   </button>
                   <button type="button" className="button" onClick={() => void openTagModal(post)}>
-                    Manage tags
+                    Remove tags
                   </button>
                   <button type="button" className="button danger" onClick={() => setDeleteTarget(post)}>
                     Delete
@@ -295,50 +268,41 @@ const AdminPosts = () => {
       )}
 
       {tagModal && (
-        <ConfirmDialog
-          title={`Manage tags for "${tagModal.title}"`}
-          confirmLabel="Save tags"
-          confirming={savingTags}
-          confirmDisabled={!tagModal.loaded}
-          error={tagError}
-          onConfirm={() => void confirmTags()}
-          onCancel={() => setTagModal(null)}
-        >
-          {!tagModal.loaded ? (
-            <p>Loading tags…</p>
-          ) : (
-            <div id="tag-input-row">
-              <input
-                value={tagInput}
-                onChange={(event) => {
-                  setTagInput(event.target.value.toLowerCase())
-                  setTagError(null)
-                }}
-                onKeyDown={handleTagInputKeyDown}
-                placeholder="Add a tag"
-                maxLength={32}
-              />
-              <button type="button" className="button" onClick={addTag}>
-                Add tag
+        <div className="modal-overlay" onClick={() => setTagModal(null)}>
+          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
+            <h2>Tags on &quot;{tagModal.title}&quot;</h2>
+            {tagError && <p className="auth-form-error">{tagError}</p>}
+            {!tagModal.loaded ? (
+              <p>Loading tags…</p>
+            ) : tagModal.tags.length === 0 ? (
+              <p>This post has no tags.</p>
+            ) : (
+              <ul id="tag-bubble-list">
+                {tagModal.tags.map((tag) => (
+                  <li key={tag} className="tag-bubble">
+                    <span>{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => void removeTag(tag)}
+                      disabled={removingTag === tag}
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                        <line x1="4" y1="4" x2="20" y2="20" />
+                        <line x1="20" y1="4" x2="4" y2="20" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="button" onClick={() => setTagModal(null)}>
+                Close
               </button>
             </div>
-          )}
-          {tagModal.tags.length > 0 && (
-            <ul id="tag-bubble-list">
-              {tagModal.tags.map((tag) => (
-                <li key={tag} className="tag-bubble">
-                  <span>{tag}</span>
-                  <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`}>
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                      <line x1="4" y1="4" x2="20" y2="20" />
-                      <line x1="20" y1="4" x2="4" y2="20" />
-                    </svg>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </ConfirmDialog>
+          </div>
+        </div>
       )}
 
       {commentsModal && (
@@ -360,16 +324,20 @@ const AdminPosts = () => {
                         <Link to={`/users/${comment.author.username}`}>{comment.author.username}</Link> ·{' '}
                         {formatDateTime(comment.createdAt)}
                       </span>
-                      <p className="admin-comment-content">{comment.content}</p>
+                      <p className={comment.isDeleted ? 'admin-comment-content admin-comment-content-deleted' : 'admin-comment-content'}>
+                        {comment.content}
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      className="button danger"
-                      onClick={() => void handleDeleteComment(comment.id)}
-                      disabled={deletingCommentId === comment.id}
-                    >
-                      {deletingCommentId === comment.id ? 'Deleting…' : 'Delete'}
-                    </button>
+                    {!comment.isDeleted && (
+                      <button
+                        type="button"
+                        className="button danger"
+                        onClick={() => setDeleteCommentTarget(comment)}
+                        disabled={deletingCommentId === comment.id}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -381,6 +349,22 @@ const AdminPosts = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {deleteCommentTarget && (
+        <ConfirmDialog
+          title="Delete comment"
+          message={`Delete this comment? Its content will be replaced with "${DELETED_COMMENT_PLACEHOLDER}" and this can't be undone.`}
+          confirmLabel="Delete"
+          danger
+          confirming={deletingCommentId === deleteCommentTarget.id}
+          error={commentsError}
+          onConfirm={() => void confirmDeleteComment()}
+          onCancel={() => {
+            setDeleteCommentTarget(null)
+            setCommentsError(null)
+          }}
+        />
       )}
     </section>
   )

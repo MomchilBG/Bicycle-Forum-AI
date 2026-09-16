@@ -230,6 +230,11 @@
   word-break: break-word;
 }
 
+.admin-comment-content-deleted {
+  color: var(--text);
+  font-style: italic;
+}
+
 .admin-comment-row .button {
   flex-shrink: 0;
   font-size: 13px;

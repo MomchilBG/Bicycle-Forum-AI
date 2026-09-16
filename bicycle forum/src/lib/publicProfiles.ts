@@ -4,7 +4,7 @@ export interface PublicProfile {
   id: string
   username: string
   firstName: string
-  lastName: string
+  lastName: string | null
   avatarUrl: string | null
   reputation: number
   role: 'user' | 'admin'
