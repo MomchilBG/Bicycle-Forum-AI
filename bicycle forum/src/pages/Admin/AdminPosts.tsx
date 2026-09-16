@@ -5,6 +5,8 @@ import { parseSearchQuery, searchPosts } from '../../lib/search'
 import type { SortOption } from '../../lib/search'
 import type { PostSummary } from '../../lib/posts'
 import { deletePost } from '../../lib/posts'
+import { getComments, deleteComment } from '../../lib/postDetail'
+import type { CommentItem } from '../../lib/postDetail'
 import { getTagsForPost, replacePostTags } from '../../lib/tags'
 import { formatDateTime } from '../../lib/formatDate'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
@@ -20,6 +22,13 @@ interface TagModalState {
   // getTagsForPost() resolves after the modal opens with tags: [] - without
   // this, saving before it resolves would replace the post's real tags with
   // an empty list. Gates the Save button until the real tags are in.
+  loaded: boolean
+}
+
+interface CommentsModalState {
+  postId: string
+  title: string
+  comments: CommentItem[]
   loaded: boolean
 }
 
@@ -40,6 +49,10 @@ const AdminPosts = () => {
   const [tagInput, setTagInput] = useState('')
   const [tagError, setTagError] = useState<string | null>(null)
   const [savingTags, setSavingTags] = useState(false)
+
+  const [commentsModal, setCommentsModal] = useState<CommentsModalState | null>(null)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+  const [commentsError, setCommentsError] = useState<string | null>(null)
 
   const runSearch = async (nextSort: SortOption, nextPage: number) => {
     if (nextPage === 0) setLoading(true)
@@ -157,6 +170,39 @@ const AdminPosts = () => {
     setTagModal(null)
   }
 
+  const openCommentsModal = async (post: PostSummary) => {
+    setCommentsModal({ postId: post.id, title: post.title, comments: [], loaded: false })
+    setCommentsError(null)
+    const comments = await getComments(post.id)
+    setCommentsModal((current) => (current && current.postId === post.id ? { ...current, comments, loaded: true } : current))
+  }
+
+  // Deleting a comment orphans (not deletes) its replies - they become
+  // top-level comments, per the ON DELETE SET NULL cascade documented in
+  // migration 16/19 - so refetch rather than filtering the deleted id out
+  // locally, which would incorrectly hide its replies too.
+  const handleDeleteComment = async (commentId: string) => {
+    if (!commentsModal) return
+    if (!window.confirm("Delete this comment? Any replies to it will become top-level comments. This can't be undone.")) return
+
+    setDeletingCommentId(commentId)
+    setCommentsError(null)
+
+    const { error } = await deleteComment(commentId)
+
+    if (error) {
+      setDeletingCommentId(null)
+      setCommentsError(error.message)
+      return
+    }
+
+    const postId = commentsModal.postId
+    const comments = await getComments(postId)
+    setDeletingCommentId(null)
+    setCommentsModal((current) => (current && current.postId === postId ? { ...current, comments } : current))
+    setPosts((current) => current.map((post) => (post.id === postId ? { ...post, commentCount: Math.max(post.commentCount - 1, 0) } : post)))
+  }
+
   const hasMore = posts.length < totalCount
 
   return (
@@ -211,6 +257,9 @@ const AdminPosts = () => {
                   </span>
                 </div>
                 <div className="admin-post-actions">
+                  <button type="button" className="button" onClick={() => void openCommentsModal(post)}>
+                    Comments
+                  </button>
                   <button type="button" className="button" onClick={() => void openTagModal(post)}>
                     Manage tags
                   </button>
@@ -290,6 +339,48 @@ const AdminPosts = () => {
             </ul>
           )}
         </ConfirmDialog>
+      )}
+
+      {commentsModal && (
+        <div className="modal-overlay" onClick={() => setCommentsModal(null)}>
+          <div className="modal-card admin-comments-modal" onClick={(event) => event.stopPropagation()}>
+            <h2>Comments on &quot;{commentsModal.title}&quot;</h2>
+            {commentsError && <p className="auth-form-error">{commentsError}</p>}
+            {!commentsModal.loaded ? (
+              <p>Loading…</p>
+            ) : commentsModal.comments.length === 0 ? (
+              <p>No comments on this post.</p>
+            ) : (
+              <ul id="admin-comment-list">
+                {commentsModal.comments.map((comment) => (
+                  <li key={comment.id} className="admin-comment-row">
+                    <div className="admin-comment-body">
+                      <span className="admin-comment-meta">
+                        {comment.parentCommentId && 'Reply · '}
+                        <Link to={`/users/${comment.author.username}`}>{comment.author.username}</Link> ·{' '}
+                        {formatDateTime(comment.createdAt)}
+                      </span>
+                      <p className="admin-comment-content">{comment.content}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="button danger"
+                      onClick={() => void handleDeleteComment(comment.id)}
+                      disabled={deletingCommentId === comment.id}
+                    >
+                      {deletingCommentId === comment.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="button" onClick={() => setCommentsModal(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   )
