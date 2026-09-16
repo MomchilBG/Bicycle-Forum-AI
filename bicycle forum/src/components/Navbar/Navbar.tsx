@@ -46,6 +46,11 @@ const Navbar = () => {
                   New post
                 </NavLink>
               )}
+              {profile.role === 'admin' && (
+                <NavLink to="/admin" className={navLinkClass} onClick={closeMenu}>
+                  Admin
+                </NavLink>
+              )}
             </>
           ) : (
             <>
