@@ -25,25 +25,48 @@
   }
 }
 
-#search-bar-mode {
-  /* Explicit background/color (not "none") because :root sets
-     color-scheme: light dark - an unstyled <select> would otherwise pick up
-     the browser's own dark/light chrome from the OS preference, which can
-     disagree with the app's manually toggled data-theme (see the button
-     chrome note in Home.css for the same issue on <button>). */
-  border: none;
+#search-bar-mode-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 100%;
   border-right: 1px solid var(--border);
-  background: var(--code-bg);
+  margin-right: 2px;
+}
+
+#search-bar-mode {
+  /* appearance: none strips the native combobox chrome entirely, rather
+     than just overriding its background/color - Chrome's built-in <select>
+     vertically centers its text using its own internal layout, not plain
+     CSS line-height, so even with matching height/line-height to the input
+     next to it, the native rendering sat visibly higher than the input's
+     text. Full appearance:none hands vertical centering to normal CSS
+     (align-items: center on this wrapper) like any other element, and the
+     custom caret svg replaces the native dropdown arrow it also removes. */
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
   color: var(--text);
   font: inherit;
   font-size: 13px;
-  padding: 0 8px 0 0;
-  margin-right: 2px;
-  flex-shrink: 0;
+  line-height: normal;
+  padding: 0 16px 0 0;
+  cursor: pointer;
 
   &:focus {
     outline: none;
   }
+}
+
+#search-bar-mode-caret {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  pointer-events: none;
 }
 
 #search-bar input {

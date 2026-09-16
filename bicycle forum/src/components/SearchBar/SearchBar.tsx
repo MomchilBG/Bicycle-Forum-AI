@@ -45,16 +45,21 @@ const SearchBar = () => {
 
   return (
     <form id="search-bar" role="search" onSubmit={handleSubmit}>
-      <select
-        id="search-bar-mode"
-        value={mode}
-        onChange={(event) => setMode(event.target.value as SearchMode)}
-        aria-label="Search type"
-      >
-        <option value="posts">Posts</option>
-        <option value="tags">Tags</option>
-        <option value="users">Users</option>
-      </select>
+      <div id="search-bar-mode-wrap">
+        <select
+          id="search-bar-mode"
+          value={mode}
+          onChange={(event) => setMode(event.target.value as SearchMode)}
+          aria-label="Search type"
+        >
+          <option value="posts">Posts</option>
+          <option value="tags">Tags</option>
+          <option value="users">Users</option>
+        </select>
+        <svg id="search-bar-mode-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
       <input
         type="search"
         value={value}
