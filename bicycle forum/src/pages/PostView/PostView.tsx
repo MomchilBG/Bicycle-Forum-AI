@@ -373,8 +373,12 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
       return
     }
 
+    setComments((current) =>
+      current.map((comment) =>
+        comment.id === commentId ? { ...comment, content: DELETED_COMMENT_PLACEHOLDER, isDeleted: true } : comment,
+      ),
+    )
     setDeleteCommentTarget(null)
-    await refreshComments()
   }
 
   if (loading) {

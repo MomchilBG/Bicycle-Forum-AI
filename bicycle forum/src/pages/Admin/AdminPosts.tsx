@@ -52,7 +52,7 @@ const AdminPosts = () => {
   const [commentsModal, setCommentsModal] = useState<CommentsModalState | null>(null)
   const [deleteCommentTarget, setDeleteCommentTarget] = useState<CommentItem | null>(null)
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
-  const [commentsError, setCommentsError] = useState<string | null>(null)
+  const [deleteCommentError, setDeleteCommentError] = useState<string | null>(null)
 
   const runSearch = async (nextSort: SortOption, nextPage: number) => {
     if (nextPage === 0) setLoading(true)
@@ -139,7 +139,6 @@ const AdminPosts = () => {
 
   const openCommentsModal = async (post: PostSummary) => {
     setCommentsModal({ postId: post.id, title: post.title, comments: [], loaded: false })
-    setCommentsError(null)
     const comments = await getComments(post.id)
     setCommentsModal((current) => (current && current.postId === post.id ? { ...current, comments, loaded: true } : current))
   }
@@ -153,13 +152,13 @@ const AdminPosts = () => {
     const commentId = deleteCommentTarget.id
 
     setDeletingCommentId(commentId)
-    setCommentsError(null)
+    setDeleteCommentError(null)
 
     const { error } = await deleteComment(commentId)
     setDeletingCommentId(null)
 
     if (error) {
-      setCommentsError(error.message)
+      setDeleteCommentError(error.message)
       return
     }
 
@@ -268,7 +267,7 @@ const AdminPosts = () => {
       )}
 
       {tagModal && (
-        <div className="modal-overlay" onClick={() => setTagModal(null)}>
+        <div className="modal-overlay" onClick={removingTag ? undefined : () => setTagModal(null)}>
           <div className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h2>Tags on &quot;{tagModal.title}&quot;</h2>
             {tagError && <p className="auth-form-error">{tagError}</p>}
@@ -297,7 +296,7 @@ const AdminPosts = () => {
               </ul>
             )}
             <div className="modal-actions">
-              <button type="button" className="button" onClick={() => setTagModal(null)}>
+              <button type="button" className="button" onClick={() => setTagModal(null)} disabled={!!removingTag}>
                 Close
               </button>
             </div>
@@ -306,10 +305,9 @@ const AdminPosts = () => {
       )}
 
       {commentsModal && (
-        <div className="modal-overlay" onClick={() => setCommentsModal(null)}>
+        <div className="modal-overlay" onClick={deletingCommentId ? undefined : () => setCommentsModal(null)}>
           <div className="modal-card admin-comments-modal" onClick={(event) => event.stopPropagation()}>
             <h2>Comments on &quot;{commentsModal.title}&quot;</h2>
-            {commentsError && <p className="auth-form-error">{commentsError}</p>}
             {!commentsModal.loaded ? (
               <p>Loading…</p>
             ) : commentsModal.comments.length === 0 ? (
@@ -343,7 +341,7 @@ const AdminPosts = () => {
               </ul>
             )}
             <div className="modal-actions">
-              <button type="button" className="button" onClick={() => setCommentsModal(null)}>
+              <button type="button" className="button" onClick={() => setCommentsModal(null)} disabled={!!deletingCommentId}>
                 Close
               </button>
             </div>
@@ -358,11 +356,11 @@ const AdminPosts = () => {
           confirmLabel="Delete"
           danger
           confirming={deletingCommentId === deleteCommentTarget.id}
-          error={commentsError}
+          error={deleteCommentError}
           onConfirm={() => void confirmDeleteComment()}
           onCancel={() => {
             setDeleteCommentTarget(null)
-            setCommentsError(null)
+            setDeleteCommentError(null)
           }}
         />
       )}

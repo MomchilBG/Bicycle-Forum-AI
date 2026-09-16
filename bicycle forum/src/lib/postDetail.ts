@@ -150,8 +150,21 @@ export const DELETED_COMMENT_PLACEHOLDER = '[deleted]'
 // Soft-delete: replaces the content instead of removing the row, so replies
 // keep their place in the thread rather than being orphaned by the
 // ON DELETE SET NULL cascade on parent_comment_id (see migration 16/19).
-export const deleteComment = (commentId: string) =>
-  supabase.from('comments').update({ content: DELETED_COMMENT_PLACEHOLDER, is_deleted: true }).eq('id', commentId)
+// Selects the row back so a silent no-op - the update matching zero rows,
+// which RLS makes indistinguishable from success (no error, just no data) -
+// surfaces as an error instead of the caller wrongly treating it as deleted.
+export const deleteComment = async (commentId: string): Promise<{ error: { message: string } | null }> => {
+  const { data, error } = await supabase
+    .from('comments')
+    .update({ content: DELETED_COMMENT_PLACEHOLDER, is_deleted: true })
+    .eq('id', commentId)
+    .select('id')
+    .maybeSingle()
+
+  if (error) return { error }
+  if (!data) return { error: { message: "Couldn't delete that comment - it may already be gone." } }
+  return { error: null }
+}
 
 // One vote per (voter, post): insert if none yet, delete to toggle the same
 // value off, or update when switching from up- to downvote (or vice versa).
