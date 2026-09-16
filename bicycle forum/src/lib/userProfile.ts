@@ -18,6 +18,7 @@ export interface UserProfilePage {
   firstName: string
   lastName: string | null
   avatarUrl: string | null
+  bio: string | null
   reputation: number
   role: 'user' | 'admin'
   isBlocked: boolean
@@ -87,6 +88,7 @@ export const getUserProfileByUsername = async (username: string): Promise<UserPr
     firstName: profileRow.first_name,
     lastName: profileRow.last_name,
     avatarUrl: profileRow.avatar_url,
+    bio: profileRow.bio,
     reputation: profileRow.reputation,
     role: profileRow.role,
     isBlocked: profileRow.is_blocked,

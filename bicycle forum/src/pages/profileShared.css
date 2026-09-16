@@ -22,6 +22,22 @@
   }
 }
 
+/* Stats + About stacked in the grid's left column, splitting the height
+   that Stats alone used to take (and got stretched to match Badges, mostly
+   as dead space) between two boxes with actual content instead. */
+.profile-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.profile-bio-text {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
 .profile-box h2 {
   margin: 0 0 16px;
   font-size: 18px;

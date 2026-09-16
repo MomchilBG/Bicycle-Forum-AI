@@ -157,19 +157,34 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
       </div>
 
       <div className="profile-grid-2">
-        <div className="profile-stats profile-box">
-          <h2>Stats</h2>
-          <div className="profile-stats-columns">
-            {statsColumns.map((column, columnIndex) => (
-              <div className="profile-stats-column" key={columnIndex}>
-                {column.map((item) => (
-                  <div className="profile-stat-row" key={item.label}>
-                    <span className="profile-stat-label">{item.label}</span>
-                    <span className="profile-stat-value">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
+        <div className="profile-left-column">
+          <div className="profile-stats profile-box">
+            <h2>Stats</h2>
+            <div className="profile-stats-columns">
+              {statsColumns.map((column, columnIndex) => (
+                <div className="profile-stats-column" key={columnIndex}>
+                  {column.map((item) => (
+                    <div className="profile-stat-row" key={item.label}>
+                      <span className="profile-stat-label">{item.label}</span>
+                      <span className="profile-stat-value">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="profile-bio profile-box">
+            <h2>About</h2>
+            {data.bio ? (
+              <p className="profile-bio-text">{data.bio}</p>
+            ) : isOwnProfile ? (
+              <p className="profile-subtitle">
+                You haven&apos;t added a bio yet. <Link to="/profile">Add one</Link>.
+              </p>
+            ) : (
+              <p className="profile-subtitle">{data.username} hasn&apos;t added a bio yet.</p>
+            )}
           </div>
         </div>
 

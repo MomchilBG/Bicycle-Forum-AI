@@ -2,6 +2,8 @@ import { supabase } from './supabaseClient'
 
 export const updateProfileName = async (userId: string, firstName: string, lastName: string | null) => supabase.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', userId)
 
+export const updateProfileBio = async (userId: string, bio: string | null) => supabase.from('profiles').update({ bio }).eq('id', userId)
+
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 
 export const uploadAvatar = async (userId: string, file: File): Promise<{ url: string } | { error: string }> => {

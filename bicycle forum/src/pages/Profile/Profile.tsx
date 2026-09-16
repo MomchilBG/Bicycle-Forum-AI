@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useAuth, type Profile as ProfileRow } from '../../auth/AuthContext'
-import { updateProfileName, uploadAvatar } from '../../lib/profile'
+import { updateProfileBio, updateProfileName, uploadAvatar } from '../../lib/profile'
 import { supabase } from '../../lib/supabaseClient'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import AuthField from '../../components/AuthField/AuthField'
@@ -12,6 +12,7 @@ import '../profileShared.css'
 import './Profile.css'
 
 const NAME_PATTERN = /^.{4,32}$/
+const BIO_MAX_LENGTH = 500
 
 const Profile = () => {
   const { profile } = useAuth()
@@ -31,6 +32,11 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const [nameError, setNameError] = useState<string | null>(null)
   const [nameSuccess, setNameSuccess] = useState<string | null>(null)
   const [savingName, setSavingName] = useState(false)
+
+  const [bio, setBio] = useState(profile.bio ?? '')
+  const [bioError, setBioError] = useState<string | null>(null)
+  const [bioSuccess, setBioSuccess] = useState<string | null>(null)
+  const [savingBio, setSavingBio] = useState(false)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -75,6 +81,30 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
 
     await refreshProfile()
     setNameSuccess('Saved.')
+  }
+
+  const handleBioSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setBioError(null)
+    setBioSuccess(null)
+
+    const trimmedBio = bio.trim()
+    if (trimmedBio.length > BIO_MAX_LENGTH) {
+      setBioError(`Bio must be ${BIO_MAX_LENGTH} characters or fewer.`)
+      return
+    }
+
+    setSavingBio(true)
+    const { error } = await updateProfileBio(profile.id, trimmedBio || null)
+    setSavingBio(false)
+
+    if (error) {
+      setBioError(error.message)
+      return
+    }
+
+    await refreshProfile()
+    setBioSuccess('Saved.')
   }
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -257,6 +287,25 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
           </button>
         </form>
       </div>
+
+      <form className="profile-box" id="profile-bio-box" onSubmit={handleBioSubmit}>
+        <h2>Profile description</h2>
+        <AuthField htmlFor="bio" label="Bio">
+          <textarea
+            id="bio"
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+            maxLength={BIO_MAX_LENGTH}
+            rows={4}
+            placeholder="Tell other riders a bit about yourself…"
+          />
+        </AuthField>
+        {bioError && <p className="auth-form-error">{bioError}</p>}
+        {bioSuccess && <p className="auth-success">{bioSuccess}</p>}
+        <button type="submit" className="button primary" disabled={savingBio}>
+          {savingBio ? 'Saving…' : 'Save description'}
+        </button>
+      </form>
 
       <div id="profile-danger-zone">
         <button type="button" id="profile-logout" onClick={() => void signOut()}>

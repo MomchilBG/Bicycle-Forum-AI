@@ -39,7 +39,8 @@
   color: var(--danger);
 }
 
-.auth-field input {
+.auth-field input,
+.auth-field textarea {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -49,7 +50,12 @@
   font-size: 15px;
 }
 
-.auth-field input:focus-visible {
+.auth-field textarea {
+  resize: vertical;
+}
+
+.auth-field input:focus-visible,
+.auth-field textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
