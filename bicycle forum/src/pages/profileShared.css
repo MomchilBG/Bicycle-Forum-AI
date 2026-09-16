@@ -87,6 +87,26 @@
   font-weight: 500;
 }
 
+/* Role/blocked-status pills reuse the same pill geometry as badges, just
+   with their own color tokens - see the same pattern in PostView.css. */
+.badge-pill.role-pill {
+  background: var(--member-bg);
+  color: var(--member);
+  border-color: var(--member-border);
+}
+
+.badge-pill.role-pill.role-admin {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.badge-pill.blocked-pill {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
 .user-badge-date {
   color: var(--text);
   font-size: 13px;

@@ -15,6 +15,8 @@ import { deletePost } from '../../lib/posts'
 import { savePost, unsavePost } from '../../lib/savedPosts'
 import { tagSearchHref } from '../../lib/search'
 import { formatDateTime } from '../../lib/formatDate'
+import { roleLabel } from '../../lib/publicProfiles'
+import type { PublicProfile } from '../../lib/publicProfiles'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
 import '../auth.css'
 import './PostView.css'
@@ -26,18 +28,17 @@ const AuthorAvatar = ({ author }: { author: { username: string; avatarUrl: strin
     <span className="author-avatar author-avatar-fallback">{author.username.slice(0, 1).toUpperCase()}</span>
   )
 
-const CommentBadges = ({ badges }: { badges: Badge[] }) => {
-  if (badges.length === 0) return null
-  return (
-    <span className="comment-badges">
-      {badges.map((badge) => (
-        <span key={badge.id} className="comment-badge-pill" title={badge.description}>
-          {badge.name}
-        </span>
-      ))}
-    </span>
-  )
-}
+const CommentBadges = ({ author, badges }: { author: PublicProfile; badges: Badge[] }) => (
+  <span className="comment-badges">
+    <span className={`comment-badge-pill role-pill role-${author.role}`}>{roleLabel(author.role)}</span>
+    {author.isBlocked && <span className="comment-badge-pill blocked-pill">Blocked</span>}
+    {badges.map((badge) => (
+      <span key={badge.id} className="comment-badge-pill" title={badge.description}>
+        {badge.name}
+      </span>
+    ))}
+  </span>
+)
 
 interface CommentBodyProps {
   comment: CommentItem
@@ -84,7 +85,7 @@ const CommentBody = ({
           <Link to={`/users/${comment.author.username}`} className="comment-author">
             {comment.author.username}
           </Link>
-          <CommentBadges badges={comment.badges} />
+          <CommentBadges author={comment.author} badges={comment.badges} />
           <span className="comment-date">
             {formatDateTime(comment.createdAt)}
             {wasEdited && ' (edited)'}
@@ -440,15 +441,15 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
               <div className="post-author-username">@{post.author.username}</div>
             </div>
           </Link>
-          {post.authorBadges.length > 0 && (
-            <ul className="badge-list">
-              {post.authorBadges.map((badge) => (
-                <li key={badge.id} title={badge.description}>
-                  {badge.name}
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="badge-list">
+            <li className={`role-pill role-${post.author.role}`}>{roleLabel(post.author.role)}</li>
+            {post.author.isBlocked && <li className="blocked-pill">Blocked</li>}
+            {post.authorBadges.map((badge) => (
+              <li key={badge.id} title={badge.description}>
+                {badge.name}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <h1>{post.title}</h1>

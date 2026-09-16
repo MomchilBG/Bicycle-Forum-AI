@@ -114,5 +114,7 @@ export const searchUsers = async (terms: string[]): Promise<PublicProfile[]> => 
     lastName: row.last_name,
     avatarUrl: row.avatar_url,
     reputation: row.reputation,
+    role: row.role,
+    isBlocked: row.is_blocked,
   }))
 }

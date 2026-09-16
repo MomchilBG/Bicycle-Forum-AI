@@ -17,6 +17,8 @@ export interface UserProfilePage {
   lastName: string
   avatarUrl: string | null
   reputation: number
+  role: 'user' | 'admin'
+  isBlocked: boolean
   createdAt: string
   postCount: number
   commentsMade: number
@@ -75,6 +77,8 @@ export const getUserProfileByUsername = async (username: string): Promise<UserPr
     lastName: profileRow.last_name,
     avatarUrl: profileRow.avatar_url,
     reputation: profileRow.reputation,
+    role: profileRow.role,
+    isBlocked: profileRow.is_blocked,
     createdAt: profileRow.created_at,
     postCount: posts.length,
     commentsMade,

@@ -389,6 +389,7 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          is_blocked: boolean
           last_name: string
           reputation: number
           role: Database["public"]["Enums"]["user_role"]

@@ -42,6 +42,8 @@ const UNKNOWN_AUTHOR: PublicProfile = {
   lastName: '',
   avatarUrl: null,
   reputation: 0,
+  role: 'user',
+  isBlocked: false,
 }
 
 const getBadgesForUsers = async (userIds: string[]): Promise<Map<string, Badge[]>> => {

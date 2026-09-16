@@ -81,6 +81,27 @@
   font-weight: 500;
 }
 
+/* Role/blocked-status pills reuse the same pill geometry as badges (same
+   padding/size/radius per context), just with their own color tokens, and
+   always come first - role, then blocked (if any), then earned badges. */
+.badge-list li.role-pill {
+  background: var(--member-bg);
+  color: var(--member);
+  border-color: var(--member-border);
+}
+
+.badge-list li.role-pill.role-admin {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.badge-list li.blocked-pill {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
 #post-view h1 {
   font-size: 32px;
   letter-spacing: normal;
@@ -304,6 +325,24 @@
   padding: 1px 8px;
   font-size: 11px;
   font-weight: 500;
+}
+
+.comment-badge-pill.role-pill {
+  background: var(--member-bg);
+  color: var(--member);
+  border-color: var(--member-border);
+}
+
+.comment-badge-pill.role-pill.role-admin {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.comment-badge-pill.blocked-pill {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger-border);
 }
 
 .comment-date {
