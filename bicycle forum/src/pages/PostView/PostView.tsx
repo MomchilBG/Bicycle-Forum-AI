@@ -6,6 +6,7 @@ import {
   castVote,
   createComment,
   deleteComment,
+  DELETED_COMMENT_PLACEHOLDER,
   getComments,
   getPostDetail,
   updateComment,
@@ -174,6 +175,8 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
   const [editError, setEditError] = useState<string | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+  const [deleteCommentTarget, setDeleteCommentTarget] = useState<CommentItem | null>(null)
+  const [deleteCommentError, setDeleteCommentError] = useState<string | null>(null)
 
   const [deletingPost, setDeletingPost] = useState(false)
   const [postActionError, setPostActionError] = useState<string | null>(null)
@@ -355,18 +358,22 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
     await refreshComments()
   }
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('Delete this comment? Its content will be replaced with "[deleted]" and this cannot be undone.')) return
+  const confirmDeleteComment = async () => {
+    if (!deleteCommentTarget) return
+    const commentId = deleteCommentTarget.id
+
     setDeletingCommentId(commentId)
+    setDeleteCommentError(null)
 
     const { error } = await deleteComment(commentId)
     setDeletingCommentId(null)
 
     if (error) {
-      setCommentError(error.message)
+      setDeleteCommentError(error.message)
       return
     }
 
+    setDeleteCommentTarget(null)
     await refreshComments()
   }
 
@@ -424,7 +431,7 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
         onCancelEdit={cancelEditComment}
         onEditTextChange={setEditText}
         onEditSubmit={(event) => handleEditCommentSubmit(event, comment.id)}
-        onDelete={() => handleDeleteComment(comment.id)}
+        onDelete={() => setDeleteCommentTarget(comment)}
       />
     )
   }
@@ -617,6 +624,22 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
           error={postActionError}
           onConfirm={() => void handleDeletePost()}
           onCancel={closeDeletePostConfirm}
+        />
+      )}
+
+      {deleteCommentTarget && (
+        <ConfirmDialog
+          title="Delete comment"
+          message={`Delete this comment? Its content will be replaced with "${DELETED_COMMENT_PLACEHOLDER}" and this cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          confirming={deletingCommentId === deleteCommentTarget.id}
+          error={deleteCommentError}
+          onConfirm={() => void confirmDeleteComment()}
+          onCancel={() => {
+            setDeleteCommentTarget(null)
+            setDeleteCommentError(null)
+          }}
         />
       )}
     </section>
