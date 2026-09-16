@@ -12,7 +12,7 @@ import '../profileShared.css'
 import './Profile.css'
 
 const NAME_PATTERN = /^.{4,32}$/
-const BIO_MAX_LENGTH = 500
+const BIO_MAX_LENGTH = 256
 
 const Profile = () => {
   const { profile } = useAuth()
@@ -288,18 +288,19 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
         </form>
       </div>
 
-      <form className="profile-box" id="profile-bio-box" onSubmit={handleBioSubmit}>
+      <form className="profile-card" id="profile-bio-box" onSubmit={handleBioSubmit}>
         <h2>Profile description</h2>
-        <AuthField htmlFor="bio" label="Bio">
+        <div className="auth-field">
           <textarea
             id="bio"
+            aria-label="Profile description"
             value={bio}
             onChange={(event) => setBio(event.target.value)}
             maxLength={BIO_MAX_LENGTH}
             rows={4}
             placeholder="Tell other riders a bit about yourself…"
           />
-        </AuthField>
+        </div>
         {bioError && <p className="auth-form-error">{bioError}</p>}
         {bioSuccess && <p className="auth-success">{bioSuccess}</p>}
         <button type="submit" className="button primary" disabled={savingBio}>

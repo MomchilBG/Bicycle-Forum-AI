@@ -158,6 +158,19 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
 
       <div className="profile-grid-2">
         <div className="profile-left-column">
+          <div className="profile-bio profile-box">
+            <h2>About</h2>
+            {data.bio ? (
+              <p className="profile-bio-text">{data.bio}</p>
+            ) : isOwnProfile ? (
+              <p className="profile-subtitle">
+                You haven&apos;t added a bio yet. <Link to="/profile">Add one</Link>.
+              </p>
+            ) : (
+              <p className="profile-subtitle">{data.username} hasn&apos;t added a bio yet.</p>
+            )}
+          </div>
+
           <div className="profile-stats profile-box">
             <h2>Stats</h2>
             <div className="profile-stats-columns">
@@ -172,19 +185,6 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="profile-bio profile-box">
-            <h2>About</h2>
-            {data.bio ? (
-              <p className="profile-bio-text">{data.bio}</p>
-            ) : isOwnProfile ? (
-              <p className="profile-subtitle">
-                You haven&apos;t added a bio yet. <Link to="/profile">Add one</Link>.
-              </p>
-            ) : (
-              <p className="profile-subtitle">{data.username} hasn&apos;t added a bio yet.</p>
-            )}
           </div>
         </div>
 

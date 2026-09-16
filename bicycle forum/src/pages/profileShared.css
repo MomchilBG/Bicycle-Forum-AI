@@ -31,6 +31,15 @@
   gap: 24px;
 }
 
+/* About sits above Stats and grows to absorb whatever's left of the row's
+   height (set by Badges, the tallest box in the row via the grid's default
+   stretch) - Stats stays sized to its own content instead of also growing,
+   since its content doesn't benefit from the extra room the way a bio's
+   prose does. */
+.profile-bio {
+  flex: 1;
+}
+
 .profile-bio-text {
   margin: 0;
   color: var(--text-h);
