@@ -111,3 +111,66 @@
   color: var(--text);
   font-size: 13px;
 }
+
+/* ".profile-badges ul" above (margin/padding/gap:8px) otherwise wins on
+   specificity over a bare ".badge-progress-list" - both a class and an
+   element selector beat a single class - so this has to be scoped under
+   .profile-badges too to actually override it. */
+.profile-badges .badge-progress-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Same specificity note as above - ".profile-badges li" sets align-items and
+   flex-wrap too, and since this rule didn't originally re-declare those
+   properties, its higher specificity only won on the properties it actually
+   set (display/flex-direction/gap) - align-items:center leaked through and
+   shrank the (childless, unsized) track below to fit-content width instead
+   of stretching it, so it has to be spelled out here too. */
+.profile-badges .badge-progress-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.badge-progress-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.badge-progress-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.badge-progress-status {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.badge-progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--badge-bg);
+  border: 1px solid var(--badge-border);
+  overflow: hidden;
+}
+
+.badge-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--badge);
+  transition: width 0.2s ease;
+}

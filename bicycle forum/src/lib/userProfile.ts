@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient'
 import { getPostsByAuthor } from './posts'
 import type { PostSummary } from './posts'
+import { getAllBadges } from './badges'
+import type { BadgeDefinition } from './badges'
 
 export interface UserBadge {
   id: string
@@ -24,11 +26,19 @@ export interface UserProfilePage {
   commentsMade: number
   commentsEarned: number
   badges: UserBadge[]
+  allBadges: BadgeDefinition[]
   posts: PostSummary[]
 }
 
+// Excludes soft-deleted comments, matching check_and_award_badges()'s own
+// comment_count - otherwise this would count comments the badge system
+// itself no longer does, throwing off the comment-count progress bar.
 export const getCommentCountForUser = async (userId: string): Promise<number> => {
-  const { count } = await supabase.from('comments').select('id', { count: 'exact', head: true }).eq('author_id', userId)
+  const { count } = await supabase
+    .from('comments')
+    .select('id', { count: 'exact', head: true })
+    .eq('author_id', userId)
+    .eq('is_deleted', false)
   return count ?? 0
 }
 
@@ -59,10 +69,11 @@ export const getUserProfileByUsername = async (username: string): Promise<UserPr
   const { data: profileRow } = await supabase.rpc('public_profiles').eq('username', username.toLowerCase()).maybeSingle()
   if (!profileRow) return null
 
-  const [posts, commentsMade, badges] = await Promise.all([
+  const [posts, commentsMade, badges, allBadges] = await Promise.all([
     getPostsByAuthor(profileRow.id, profileRow.username),
     getCommentCountForUser(profileRow.id),
     getBadgesForUser(profileRow.id),
+    getAllBadges(),
   ])
 
   // "Comments earned" is how many comments this user's own posts have
@@ -84,6 +95,7 @@ export const getUserProfileByUsername = async (username: string): Promise<UserPr
     commentsMade,
     commentsEarned,
     badges,
+    allBadges,
     posts,
   }
 }

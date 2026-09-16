@@ -9,8 +9,20 @@ import PostSummaryCard from '../../components/PostSummaryCard/PostSummaryCard'
 import { formatDate, formatDateTime } from '../../lib/formatDate'
 import { formatFullName } from '../../lib/formatName'
 import { roleLabel } from '../../lib/publicProfiles'
+import { computeBadgeProgress } from '../../lib/badges'
+import type { BadgeCriteriaType } from '../../lib/badges'
 import '../profileShared.css'
 import './UserProfile.css'
+
+const BADGE_CATEGORY_LABELS: Record<BadgeCriteriaType, string> = {
+  post_count: 'Posts',
+  comment_count: 'Comments',
+  reputation: 'Reputation',
+  tenure_days: 'Tenure',
+}
+
+// Fixed display order, independent of whatever order badges come back in.
+const BADGE_CATEGORY_ORDER: BadgeCriteriaType[] = ['post_count', 'comment_count', 'reputation', 'tenure_days']
 
 const UserProfile = () => {
   const { username } = useParams<{ username: string }>()
@@ -25,6 +37,9 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
   const [data, setData] = useState<UserProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  // Computed once when the profile loads rather than inline during render,
+  // which would call the impure Date.now() on every render.
+  const [tenureDays, setTenureDays] = useState(0)
 
   const [postsTab, setPostsTab] = useState<'posts' | 'saved'>('posts')
   const [savedCount, setSavedCount] = useState(0)
@@ -41,6 +56,7 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
       setData(result)
       setNotFound(!result)
       setLoading(false)
+      if (result) setTenureDays(Math.floor((Date.now() - new Date(result.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
     })
 
     return () => {
@@ -96,6 +112,16 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
     { label: 'Comments made', value: data.commentsMade },
     { label: 'Comments earned', value: data.commentsEarned },
   ]
+
+  const currentByCategory: Record<BadgeCriteriaType, number> = {
+    post_count: data.postCount,
+    comment_count: data.commentsMade,
+    reputation: data.reputation,
+    tenure_days: tenureDays,
+  }
+  const badgeProgress = BADGE_CATEGORY_ORDER.map((criteriaType) =>
+    computeBadgeProgress(criteriaType, currentByCategory[criteriaType], data.allBadges),
+  )
   const statsMid = Math.ceil(statsItems.length / 2)
   const statsColumns = [statsItems.slice(0, statsMid), statsItems.slice(statsMid)]
 
@@ -130,7 +156,7 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
         )}
       </div>
 
-      <div className={data.badges.length > 0 ? 'profile-grid-2' : undefined}>
+      <div className="profile-grid-2">
         <div className="profile-stats profile-box">
           <h2>Stats</h2>
           <div className="profile-stats-columns">
@@ -147,9 +173,9 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
           </div>
         </div>
 
-        {data.badges.length > 0 && (
-          <div className="profile-badges profile-box">
-            <h2>Badges</h2>
+        <div className="profile-badges profile-box">
+          <h2>Badges</h2>
+          {data.badges.length > 0 && (
             <ul>
               {data.badges.map((badge) => (
                 <li key={badge.id} title={badge.description}>
@@ -158,8 +184,28 @@ const UserProfileForUsername = ({ username }: { username: string }) => {
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          )}
+
+          <ul className="badge-progress-list">
+            {badgeProgress.map((progress) => (
+              <li key={progress.criteriaType} className="badge-progress-row">
+                <div className="badge-progress-heading">
+                  <span className="badge-progress-label">{BADGE_CATEGORY_LABELS[progress.criteriaType]}</span>
+                  <span className="badge-progress-status">
+                    {progress.nextBadge
+                      ? `${progress.current} / ${progress.nextBadge.threshold} to "${progress.nextBadge.name}"`
+                      : progress.earnedTopBadge
+                        ? `"${progress.earnedTopBadge.name}" - max level reached`
+                        : `${progress.current}`}
+                  </span>
+                </div>
+                <div className="badge-progress-track">
+                  <div className="badge-progress-fill" style={{ width: `${progress.percent}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <div id="user-profile-posts" className="profile-box">
