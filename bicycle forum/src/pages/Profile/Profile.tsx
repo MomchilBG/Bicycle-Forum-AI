@@ -30,19 +30,21 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const [firstName, setFirstName] = useState(profile.first_name)
   const [lastName, setLastName] = useState(profile.last_name ?? '')
   const [nameError, setNameError] = useState<string | null>(null)
-  const [nameSuccess, setNameSuccess] = useState<string | null>(null)
   const [savingName, setSavingName] = useState(false)
 
   const [bio, setBio] = useState(profile.bio ?? '')
   const [bioError, setBioError] = useState<string | null>(null)
-  const [bioSuccess, setBioSuccess] = useState<string | null>(null)
   const [savingBio, setSavingBio] = useState(false)
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  // Shared acknowledgment dialog for all three save actions above, in place
+  // of each box's own little "Saved." text - only one can be mid-submit at
+  // a time in practice, so one piece of state covers all of them.
+  const [savedDialog, setSavedDialog] = useState<{ title: string; message: string } | null>(null)
 
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
@@ -56,7 +58,6 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setNameError(null)
-    setNameSuccess(null)
 
     const trimmedFirst = firstName.trim()
     const trimmedLast = lastName.trim()
@@ -80,13 +81,12 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
     }
 
     await refreshProfile()
-    setNameSuccess('Saved.')
+    setSavedDialog({ title: 'Name saved', message: 'Your name has been updated.' })
   }
 
   const handleBioSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBioError(null)
-    setBioSuccess(null)
 
     const trimmedBio = bio.trim()
     if (trimmedBio.length > BIO_MAX_LENGTH) {
@@ -104,13 +104,12 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
     }
 
     await refreshProfile()
-    setBioSuccess('Saved.')
+    setSavedDialog({ title: 'Description saved', message: 'Your profile description has been updated.' })
   }
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPasswordError(null)
-    setPasswordSuccess(null)
 
     if (newPassword.length < 6) {
       setPasswordError('Password must be at least 6 characters.')
@@ -132,7 +131,7 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
 
     setNewPassword('')
     setConfirmPassword('')
-    setPasswordSuccess('Password updated.')
+    setSavedDialog({ title: 'Password updated', message: 'Your password has been updated.' })
   }
 
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -255,7 +254,6 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
             />
           </AuthField>
           {nameError && <p className="auth-form-error">{nameError}</p>}
-          {nameSuccess && <p className="auth-success">{nameSuccess}</p>}
           <button type="submit" className="button primary" disabled={savingName}>
             {savingName ? 'Saving…' : 'Save name'}
           </button>
@@ -281,7 +279,6 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
             />
           </AuthField>
           {passwordError && <p className="auth-form-error">{passwordError}</p>}
-          {passwordSuccess && <p className="auth-success">{passwordSuccess}</p>}
           <button type="submit" className="button primary" disabled={savingPassword}>
             {savingPassword ? 'Saving…' : 'Update password'}
           </button>
@@ -302,7 +299,6 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
           />
         </div>
         {bioError && <p className="auth-form-error">{bioError}</p>}
-        {bioSuccess && <p className="auth-success">{bioSuccess}</p>}
         <button type="submit" className="button primary" disabled={savingBio}>
           {savingBio ? 'Saving…' : 'Save description'}
         </button>
@@ -338,6 +334,17 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
             />
           </AuthField>
         </ConfirmDialog>
+      )}
+
+      {savedDialog && (
+        <ConfirmDialog
+          title={savedDialog.title}
+          message={savedDialog.message}
+          confirmLabel="OK"
+          hideCancel
+          onConfirm={() => setSavedDialog(null)}
+          onCancel={() => setSavedDialog(null)}
+        />
       )}
     </section>
   )

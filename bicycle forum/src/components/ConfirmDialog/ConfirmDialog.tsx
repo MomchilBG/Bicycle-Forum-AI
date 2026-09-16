@@ -6,6 +6,10 @@ interface ConfirmDialogProps {
   message?: ReactNode
   confirmLabel: string
   cancelLabel?: string
+  // Hides the Cancel button, leaving only Confirm - for a plain
+  // acknowledgment dialog (e.g. "Saved") rather than an actual choice.
+  // The backdrop still calls onCancel, so it's still dismissible that way.
+  hideCancel?: boolean
   danger?: boolean
   confirming?: boolean
   confirmDisabled?: boolean
@@ -20,6 +24,7 @@ const ConfirmDialog = ({
   message,
   confirmLabel,
   cancelLabel = 'Cancel',
+  hideCancel,
   danger,
   confirming,
   confirmDisabled,
@@ -35,9 +40,11 @@ const ConfirmDialog = ({
       {children}
       {error && <p className="auth-form-error">{error}</p>}
       <div className="modal-actions">
-        <button type="button" className="button" onClick={onCancel} disabled={confirming}>
-          {cancelLabel}
-        </button>
+        {!hideCancel && (
+          <button type="button" className="button" onClick={onCancel} disabled={confirming}>
+            {cancelLabel}
+          </button>
+        )}
         <button
           type="button"
           className={`button ${danger ? 'danger' : 'primary'}`}
