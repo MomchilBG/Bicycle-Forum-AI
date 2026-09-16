@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { parseSearchQuery, searchPosts } from '../../lib/search'
@@ -27,7 +27,6 @@ const AdminPosts = () => {
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [searched, setSearched] = useState(false)
 
   const [deleteTarget, setDeleteTarget] = useState<PostSummary | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -51,8 +50,22 @@ const AdminPosts = () => {
     setPage(nextPage)
     setLoading(false)
     setLoadingMore(false)
-    setSearched(true)
   }
+
+  // Load the default (unfiltered, most-recent) list once on mount, same as
+  // PostsBrowse does - only the initial load is automatic, sort/search/load
+  // more are all explicit user actions after that. Fetches directly (like
+  // PostsBrowse's own mount effect) rather than through runSearch, since
+  // runSearch's synchronous setLoading(true) at the top - fine when called
+  // from an event handler - trips the set-state-in-effect lint rule when
+  // called straight from an effect body.
+  useEffect(() => {
+    searchPosts(parseSearchQuery(''), 'recent', 0).then((result) => {
+      setPosts(result.posts)
+      setTotalCount(result.totalCount)
+      setLoading(false)
+    })
+  }, [])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -177,7 +190,7 @@ const AdminPosts = () => {
 
       {loading ? (
         <p>Loading…</p>
-      ) : !searched || posts.length === 0 ? (
+      ) : posts.length === 0 ? (
         <p>No posts match.</p>
       ) : (
         <>
