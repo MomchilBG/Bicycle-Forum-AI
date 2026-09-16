@@ -94,6 +94,14 @@ export const searchPosts = async (query: ParsedQuery, sort: SortOption, page: nu
 
 const USER_SEARCH_LIMIT = 50
 
+// PostgREST's .or() filter syntax treats , ( ) as structural separators, so a
+// literal one in a user-typed search term (e.g. a pasted "Smith, John") would
+// otherwise corrupt the filter string it's spliced into and silently return
+// no rows. Quoting the value, with any backslash/double-quote inside it
+// escaped, is how PostgREST expects a literal value to be passed - see
+// https://postgrest.org/en/stable/references/api/tables_views/#operators
+export const escapeOrFilterValue = (value: string): string => `"${value.replace(/[\\"]/g, '\\$&')}"`
+
 // u/username search: matches any profile whose username contains any of the
 // given terms, via the same public_profiles() RPC the rest of the app uses
 // for batch profile lookups - PostgREST applies the ilike/or/order/limit
@@ -103,7 +111,7 @@ export const searchUsers = async (terms: string[]): Promise<PublicProfile[]> => 
 
   const { data } = await supabase
     .rpc('public_profiles')
-    .or(terms.map((term) => `username.ilike.%${term}%`).join(','))
+    .or(terms.map((term) => `username.ilike.${escapeOrFilterValue(`%${term}%`)}`).join(','))
     .order('username')
     .limit(USER_SEARCH_LIMIT)
 

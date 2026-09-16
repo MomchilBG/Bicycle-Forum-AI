@@ -64,13 +64,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // avoids ever showing a stale profile from a previous session.
   const profile = profileState?.userId === userId ? profileState.profile : null
 
+  // True only in that same brief window - there's a logged-in user, but the
+  // fetch for their profile hasn't resolved (or settled to a genuinely null
+  // row) yet. Lets a guard that depends on `profile` (like RequireAdmin) tell
+  // "still fetching" apart from "fetched, and it's null", since both look
+  // like `profile === null` otherwise.
+  const profileLoading = !!userId && profileState?.userId !== userId
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}
+      value={{ session, user: session?.user ?? null, profile, loading, profileLoading, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { escapeOrFilterValue } from './search'
 
 export interface AdminUserRow {
   id: string
@@ -21,10 +22,11 @@ export const searchAdminUsers = async (term: string): Promise<AdminUserRow[]> =>
   const trimmed = term.trim()
   if (!trimmed) return []
 
+  const pattern = escapeOrFilterValue(`%${trimmed}%`)
   const { data } = await supabase
     .from('profiles')
     .select('id, username, first_name, last_name, email, is_blocked, created_at')
-    .or(`username.ilike.%${trimmed}%,email.ilike.%${trimmed}%,first_name.ilike.%${trimmed}%,last_name.ilike.%${trimmed}%`)
+    .or(`username.ilike.${pattern},email.ilike.${pattern},first_name.ilike.${pattern},last_name.ilike.${pattern}`)
     .order('username')
     .limit(ADMIN_USER_SEARCH_LIMIT)
 

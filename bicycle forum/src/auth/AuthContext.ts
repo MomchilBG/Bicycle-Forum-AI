@@ -9,6 +9,12 @@ export interface AuthContextValue {
   user: User | null
   profile: Profile | null
   loading: boolean
+  // True while profile is being (re)fetched for the current session - distinct
+  // from `loading`, which only covers the initial session lookup. A guard
+  // that depends on `profile` (like RequireAdmin) needs this to tell "still
+  // fetching" apart from "fetched and it's genuinely null", since both look
+  // like `profile === null` otherwise.
+  profileLoading: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }

@@ -18,10 +18,12 @@ const AdminUsers = () => {
   const [blocking, setBlocking] = useState(false)
   const [blockError, setBlockError] = useState<string | null>(null)
   const [pendingUnblockId, setPendingUnblockId] = useState<string | null>(null)
+  const [unblockError, setUnblockError] = useState<string | null>(null)
 
   const runSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
+    setUnblockError(null)
     const result = await searchAdminUsers(term)
     setUsers(result)
     setLoading(false)
@@ -50,9 +52,16 @@ const AdminUsers = () => {
 
   const handleUnblock = async (user: AdminUserRow) => {
     setPendingUnblockId(user.id)
+    setUnblockError(null)
     const { error } = await setUserBlocked(user.id, false)
     setPendingUnblockId(null)
-    if (!error) applyBlocked(user.id, false)
+
+    if (error) {
+      setUnblockError(`Couldn't unblock ${user.username}: ${error.message}`)
+      return
+    }
+
+    applyBlocked(user.id, false)
   }
 
   return (
@@ -78,6 +87,8 @@ const AdminUsers = () => {
           {loading ? 'Searching…' : 'Search'}
         </button>
       </form>
+
+      {unblockError && <p className="auth-form-error">{unblockError}</p>}
 
       {users === null ? (
         <p>Type a username, email, or name above to find a user.</p>

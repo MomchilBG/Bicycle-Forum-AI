@@ -17,6 +17,10 @@ interface TagModalState {
   postId: string
   title: string
   tags: string[]
+  // getTagsForPost() resolves after the modal opens with tags: [] - without
+  // this, saving before it resolves would replace the post's real tags with
+  // an empty list. Gates the Save button until the real tags are in.
+  loaded: boolean
 }
 
 const AdminPosts = () => {
@@ -98,11 +102,11 @@ const AdminPosts = () => {
   }
 
   const openTagModal = async (post: PostSummary) => {
-    setTagModal({ postId: post.id, title: post.title, tags: [] })
+    setTagModal({ postId: post.id, title: post.title, tags: [], loaded: false })
     setTagInput('')
     setTagError(null)
     const tags = await getTagsForPost(post.id)
-    setTagModal((current) => (current && current.postId === post.id ? { ...current, tags } : current))
+    setTagModal((current) => (current && current.postId === post.id ? { ...current, tags, loaded: true } : current))
   }
 
   const addTag = () => {
@@ -138,7 +142,7 @@ const AdminPosts = () => {
   }
 
   const confirmTags = async () => {
-    if (!tagModal) return
+    if (!tagModal || !tagModal.loaded) return
     setSavingTags(true)
     setTagError(null)
 
@@ -246,25 +250,30 @@ const AdminPosts = () => {
           title={`Manage tags for "${tagModal.title}"`}
           confirmLabel="Save tags"
           confirming={savingTags}
+          confirmDisabled={!tagModal.loaded}
           error={tagError}
           onConfirm={() => void confirmTags()}
           onCancel={() => setTagModal(null)}
         >
-          <div id="tag-input-row">
-            <input
-              value={tagInput}
-              onChange={(event) => {
-                setTagInput(event.target.value.toLowerCase())
-                setTagError(null)
-              }}
-              onKeyDown={handleTagInputKeyDown}
-              placeholder="Add a tag"
-              maxLength={32}
-            />
-            <button type="button" className="button" onClick={addTag}>
-              Add tag
-            </button>
-          </div>
+          {!tagModal.loaded ? (
+            <p>Loading tags…</p>
+          ) : (
+            <div id="tag-input-row">
+              <input
+                value={tagInput}
+                onChange={(event) => {
+                  setTagInput(event.target.value.toLowerCase())
+                  setTagError(null)
+                }}
+                onKeyDown={handleTagInputKeyDown}
+                placeholder="Add a tag"
+                maxLength={32}
+              />
+              <button type="button" className="button" onClick={addTag}>
+                Add tag
+              </button>
+            </div>
+          )}
           {tagModal.tags.length > 0 && (
             <ul id="tag-bubble-list">
               {tagModal.tags.map((tag) => (
