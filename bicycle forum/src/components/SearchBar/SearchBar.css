@@ -25,6 +25,27 @@
   }
 }
 
+#search-bar-mode {
+  /* Explicit background/color (not "none") because :root sets
+     color-scheme: light dark - an unstyled <select> would otherwise pick up
+     the browser's own dark/light chrome from the OS preference, which can
+     disagree with the app's manually toggled data-theme (see the button
+     chrome note in Home.css for the same issue on <button>). */
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 0 8px 0 0;
+  margin-right: 2px;
+  flex-shrink: 0;
+
+  &:focus {
+    outline: none;
+  }
+}
+
 #search-bar input {
   border: none;
   background: none;
