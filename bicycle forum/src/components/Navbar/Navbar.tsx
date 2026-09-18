@@ -33,9 +33,6 @@ const Navbar = () => {
           🚲 Bicycle Forum
         </NavLink>
         <nav>
-          <NavLink to="/" end className={navLinkClass} onClick={closeMenu}>
-            Home
-          </NavLink>
           {profile ? (
             <>
               <NavLink to="/posts" end className={navLinkClass} onClick={closeMenu}>
