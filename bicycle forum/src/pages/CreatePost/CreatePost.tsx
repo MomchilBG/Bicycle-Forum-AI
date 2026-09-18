@@ -2,7 +2,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { createPost } from '../../lib/posts'
 import { attachTagsToPost } from '../../lib/tags'
+import { uploadPostImage } from '../../lib/postImages'
 import PostForm from '../../components/PostForm/PostForm'
+import type { PostImageChange } from '../../components/PostForm/PostForm'
 
 const CreatePost = () => {
   const navigate = useNavigate()
@@ -28,8 +30,17 @@ const CreatePost = () => {
 
   const authorId = profile.id
 
-  const handleSubmit = async (title: string, content: string, tags: string[]): Promise<{ error: string | null }> => {
-    const { data, error } = await createPost(authorId, title, content)
+  const handleSubmit = async (title: string, content: string, tags: string[], image: PostImageChange): Promise<{ error: string | null }> => {
+    let imageUrl: string | null = null
+    if (image.file) {
+      const imageResult = await uploadPostImage(authorId, image.file)
+      if ('error' in imageResult) {
+        return { error: `Image failed to upload: ${imageResult.error}` }
+      }
+      imageUrl = imageResult.url
+    }
+
+    const { data, error } = await createPost(authorId, title, content, imageUrl)
 
     if (error || !data) {
       return { error: error?.message ?? 'Something went wrong creating your post.' }

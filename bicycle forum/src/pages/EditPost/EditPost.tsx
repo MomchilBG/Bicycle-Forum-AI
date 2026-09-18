@@ -4,7 +4,9 @@ import { useAuth } from '../../auth/AuthContext'
 import { getPostForEdit, updatePost } from '../../lib/posts'
 import type { EditablePost } from '../../lib/posts'
 import { replacePostTags } from '../../lib/tags'
+import { uploadPostImage } from '../../lib/postImages'
 import PostForm from '../../components/PostForm/PostForm'
+import type { PostImageChange } from '../../components/PostForm/PostForm'
 
 const EditPost = () => {
   const { id } = useParams<{ id: string }>()
@@ -67,8 +69,19 @@ const EditPostForId = ({ postId }: { postId: string }) => {
     )
   }
 
-  const handleSubmit = async (title: string, content: string, tags: string[]): Promise<{ error: string | null }> => {
-    const { error } = await updatePost(postId, title, content)
+  const handleSubmit = async (title: string, content: string, tags: string[], image: PostImageChange): Promise<{ error: string | null }> => {
+    let imageUrl: string | null | undefined
+    if (image.file) {
+      const imageResult = await uploadPostImage(profile.id, image.file)
+      if ('error' in imageResult) {
+        return { error: `Image failed to upload: ${imageResult.error}` }
+      }
+      imageUrl = imageResult.url
+    } else if (image.remove) {
+      imageUrl = null
+    }
+
+    const { error } = await updatePost(postId, title, content, imageUrl)
     if (error) return { error: error.message }
 
     const { error: tagError } = await replacePostTags(postId, tags)
@@ -85,6 +98,7 @@ const EditPostForId = ({ postId }: { postId: string }) => {
       initialTitle={post.title}
       initialContent={post.content}
       initialTags={post.tags}
+      initialImageUrl={post.imageUrl}
       submitLabel="Save changes"
       submittingLabel="Saving…"
       cancelHref={`/posts/${postId}`}

@@ -84,13 +84,14 @@ export const getPostsByAuthor = async (authorId: string, authorUsername: string)
   }))
 }
 
-export const createPost = async (authorId: string, title: string, content: string) => supabase.from('posts').insert({ author_id: authorId, title, content }).select('id').single()
+export const createPost = async (authorId: string, title: string, content: string, imageUrl: string | null = null) => supabase.from('posts').insert({ author_id: authorId, title, content, image_url: imageUrl }).select('id').single()
 
 export interface EditablePost {
   title: string
   content: string
   authorId: string
   tags: string[]
+  imageUrl: string | null
 }
 
 // Deliberately leaner than getPostDetail() (no author profile, badges, or
@@ -98,15 +99,22 @@ export interface EditablePost {
 // tags.
 export const getPostForEdit = async (postId: string): Promise<EditablePost | null> => {
   const [{ data: post, error }, tags] = await Promise.all([
-    supabase.from('posts').select('title, content, author_id').eq('id', postId).single(),
+    supabase.from('posts').select('title, content, author_id, image_url').eq('id', postId).single(),
     getTagsForPost(postId),
   ])
 
   if (error || !post) return null
 
-  return { title: post.title, content: post.content, authorId: post.author_id, tags }
+  return { title: post.title, content: post.content, authorId: post.author_id, tags, imageUrl: post.image_url }
 }
 
-export const updatePost = (postId: string, title: string, content: string) => supabase.from('posts').update({ title, content }).eq('id', postId)
+// imageUrl left undefined means "don't touch the post's image"; passing
+// null explicitly clears it, and a string replaces it - both go through the
+// same UPDATE as title/content so this is one edit, not two.
+export const updatePost = (postId: string, title: string, content: string, imageUrl?: string | null) => {
+  const patch: { title: string; content: string; image_url?: string | null } = { title, content }
+  if (imageUrl !== undefined) patch.image_url = imageUrl
+  return supabase.from('posts').update(patch).eq('id', postId)
+}
 
 export const deletePost = (postId: string) => supabase.from('posts').delete().eq('id', postId)

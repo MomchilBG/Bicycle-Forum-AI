@@ -140,6 +140,7 @@ export type Database = {
           created_at: string
           dislike_count: number
           id: string
+          image_url: string | null
           like_count: number
           title: string
           updated_at: string
@@ -151,6 +152,7 @@ export type Database = {
           created_at?: string
           dislike_count?: number
           id?: string
+          image_url?: string | null
           like_count?: number
           title: string
           updated_at?: string
@@ -162,6 +164,7 @@ export type Database = {
           created_at?: string
           dislike_count?: number
           id?: string
+          image_url?: string | null
           like_count?: number
           title?: string
           updated_at?: string

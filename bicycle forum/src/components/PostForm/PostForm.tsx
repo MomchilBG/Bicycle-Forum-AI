@@ -1,21 +1,30 @@
-import { useState } from 'react'
-import type { FormEvent, KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { ALLOWED_POST_IMAGE_LABEL, ALLOWED_POST_IMAGE_TYPES, validatePostImage } from '../../lib/postImages'
 import '../../pages/auth.css'
 import './PostForm.css'
 
 const TITLE_PATTERN = /^.{4,64}$/
 const CONTENT_PATTERN = /^[\s\S]{16,8192}$/
+const ALLOWED_POST_IMAGE_TYPES_ACCEPT = ALLOWED_POST_IMAGE_TYPES.join(',')
+
+export interface PostImageChange {
+  file: File | null
+  // Clear the image with no replacement. Only meaningful when `file` is null.
+  remove: boolean
+}
 
 export interface PostFormProps {
   heading: string
   initialTitle?: string
   initialContent?: string
   initialTags?: string[]
+  initialImageUrl?: string | null
   submitLabel: string
   submittingLabel: string
   cancelHref?: string
-  onSubmit: (title: string, content: string, tags: string[]) => Promise<{ error: string | null }>
+  onSubmit: (title: string, content: string, tags: string[], image: PostImageChange) => Promise<{ error: string | null }>
 }
 
 const PostForm = ({
@@ -23,6 +32,7 @@ const PostForm = ({
   initialTitle = '',
   initialContent = '',
   initialTags = [],
+  initialImageUrl = null,
   submitLabel,
   submittingLabel,
   cancelHref,
@@ -35,6 +45,45 @@ const PostForm = ({
   const [tagError, setTagError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imageRemoved, setImageRemoved] = useState(false)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  // Derived from imageFile (not separate state) so there's nothing to
+  // resync via an effect - only the URL's lifetime (revoking the previous
+  // one when it's replaced or on unmount) needs an effect.
+  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile])
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview)
+    }
+  }, [imagePreview])
+
+  const displayedImageUrl = imagePreview ?? (imageRemoved ? null : initialImageUrl)
+
+  const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ''
+    if (!file) return
+
+    const validationError = validatePostImage(file)
+    if (validationError) {
+      setImageError(validationError)
+      return
+    }
+
+    setImageError(null)
+    setImageFile(file)
+    setImageRemoved(false)
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImageError(null)
+    setImageRemoved(true)
+  }
 
   const addTag = () => {
     // Underscores are reserved as the navbar search box's stand-in for a
@@ -87,7 +136,7 @@ const PostForm = ({
     }
 
     setSubmitting(true)
-    const { error } = await onSubmit(trimmedTitle, trimmedContent, tags)
+    const { error } = await onSubmit(trimmedTitle, trimmedContent, tags, { file: imageFile, remove: imageRemoved })
     setSubmitting(false)
 
     if (error) setFormError(error)
@@ -119,6 +168,35 @@ const PostForm = ({
             rows={10}
             maxLength={8192}
           />
+        </div>
+
+        <div className="auth-field">
+          <label htmlFor="postImage">Image (optional)</label>
+          <div id="post-image-field">
+            {displayedImageUrl && (
+              <img id="post-image-preview" src={displayedImageUrl} alt="" />
+            )}
+            <div id="post-image-actions">
+              <input
+                ref={imageInputRef}
+                id="postImage"
+                type="file"
+                accept={ALLOWED_POST_IMAGE_TYPES_ACCEPT}
+                onChange={handleImageFileChange}
+                hidden
+              />
+              <button type="button" className="button" onClick={() => imageInputRef.current?.click()}>
+                {displayedImageUrl ? 'Replace image' : 'Add image'}
+              </button>
+              {displayedImageUrl && (
+                <button type="button" className="button" onClick={handleRemoveImage}>
+                  Remove image
+                </button>
+              )}
+            </div>
+            <p id="post-image-hint">{ALLOWED_POST_IMAGE_LABEL} - up to 5MB.</p>
+            {imageError && <span className="auth-error">{imageError}</span>}
+          </div>
         </div>
 
         <div className="auth-field">
