@@ -20,6 +20,7 @@ import { formatFullName } from '../../lib/formatName'
 import { roleLabel } from '../../lib/publicProfiles'
 import type { PublicProfile } from '../../lib/publicProfiles'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
+import ImageLightbox from '../../components/ImageLightbox/ImageLightbox'
 import '../auth.css'
 import './PostView.css'
 
@@ -181,6 +182,8 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
   const [deletingPost, setDeletingPost] = useState(false)
   const [postActionError, setPostActionError] = useState<string | null>(null)
   const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false)
+
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -475,7 +478,9 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
           <ul className="post-view-images">
             {post.images.map((url) => (
               <li key={url}>
-                <img src={url} alt="" />
+                <button type="button" onClick={() => setLightboxUrl(url)} aria-label="View full size image">
+                  <img src={url} alt="" />
+                </button>
               </li>
             ))}
           </ul>
@@ -627,6 +632,8 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
           )}
         </section>
       </article>
+
+      {lightboxUrl && <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
 
       {showDeletePostConfirm && (
         <ConfirmDialog

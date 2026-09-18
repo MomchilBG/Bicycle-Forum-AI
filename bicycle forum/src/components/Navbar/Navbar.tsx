@@ -36,7 +36,7 @@ const Navbar = () => {
           {profile ? (
             <>
               <NavLink to="/posts" end className={navLinkClass} onClick={closeMenu}>
-                Posts
+                Browse
               </NavLink>
               {!profile.is_blocked && (
                 <NavLink to="/posts/new" className={navLinkClass} onClick={closeMenu}>

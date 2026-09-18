@@ -134,6 +134,15 @@
   gap: 10px;
 }
 
+.post-view-images button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+}
+
 .post-view-images img {
   display: block;
   width: 100%;
@@ -141,6 +150,11 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   object-fit: cover;
+  transition: opacity 0.15s;
+}
+
+.post-view-images button:hover img {
+  opacity: 0.85;
 }
 
 .tag-list {

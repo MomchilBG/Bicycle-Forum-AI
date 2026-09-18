@@ -215,7 +215,9 @@ const PostForm = ({
         </div>
 
         <div className="auth-field">
-          <label htmlFor="postImages">Images</label>
+          <label htmlFor="postImages">
+            Images ({imageItems.length}/{MAX_POST_IMAGES})
+          </label>
           <div id="post-image-field">
             {imageItems.length > 0 && (
               <ul id="post-image-list">
@@ -244,7 +246,7 @@ const PostForm = ({
               </button>
             </div>
             <p id="post-image-hint">
-              Up to {MAX_POST_IMAGES} images ({imageItems.length}/{MAX_POST_IMAGES}). {ALLOWED_POST_IMAGE_LABEL} - up to 5MB each.
+              {ALLOWED_POST_IMAGE_LABEL} | 5MB per image
             </p>
             {imageError && <span className="auth-error">{imageError}</span>}
           </div>
