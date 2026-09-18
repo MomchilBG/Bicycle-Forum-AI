@@ -15,12 +15,6 @@ export const uploadAvatar = async (userId: string, file: File): Promise<{ url: s
     return { error: 'Image must be 2MB or smaller.' }
   }
 
-  // Clear out any previous avatar first - the upload path below is stable
-  // for a given extension, but a user switching file types (e.g. png to
-  // jpg) would otherwise leave the old one behind as an orphan alongside
-  // the new one, since upsert only overwrites an exact path match.
-  await clearStorageFolder('avatars', userId)
-
   const ext = file.name.split('.').pop() ?? 'jpg'
   const path = `${userId}/avatar.${ext}`
 
@@ -34,6 +28,14 @@ export const uploadAvatar = async (userId: string, file: File): Promise<{ url: s
 
   const { error: updateError } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
   if (updateError) return { error: updateError.message }
+
+  // Only now that the new avatar is uploaded and the profile points at it -
+  // clean up any previous one left behind under a different extension (a
+  // user switching file types would otherwise orphan the old file, since
+  // upsert only overwrites an exact path match). Doing this after both
+  // writes succeed means a failure partway through never leaves the user
+  // with no avatar file at all.
+  await clearStorageFolder('avatars', userId, path)
 
   return { url }
 }

@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import { usePointerPan } from '../../lib/usePointerPan'
 import './AvatarCropper.css'
 
 const VIEWPORT_SIZE = 260
@@ -25,7 +25,6 @@ const AvatarCropper = forwardRef<AvatarCropperHandle, AvatarCropperProps>(({ fil
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null)
   const [zoom, setZoom] = useState(MIN_ZOOM)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const dragState = useRef<{ startX: number; startY: number; startOffsetX: number; startOffsetY: number } | null>(null)
   const imgRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
@@ -60,22 +59,9 @@ const AvatarCropper = forwardRef<AvatarCropperHandle, AvatarCropperProps>(({ fil
     })
   }
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    dragState.current = { startX: event.clientX, startY: event.clientY, startOffsetX: offset.x, startOffsetY: offset.y }
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragState.current) return
-    const dx = event.clientX - dragState.current.startX
-    const dy = event.clientY - dragState.current.startY
-    setOffset(clampOffset(dragState.current.startOffsetX + dx, dragState.current.startOffsetY + dy, displayWidth, displayHeight))
-  }
-
-  const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    dragState.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-  }
+  const { onPointerDown, onPointerMove, onPointerUp } = usePointerPan((dx, dy) => {
+    setOffset((current) => clampOffset(current.x + dx, current.y + dy, displayWidth, displayHeight))
+  })
 
   // Re-centers on the same focal point the viewport was already showing,
   // so dragging to an edge and then zooming in doesn't fling the image
@@ -131,10 +117,10 @@ const AvatarCropper = forwardRef<AvatarCropperHandle, AvatarCropperProps>(({ fil
     <div id="avatar-cropper">
       <div
         id="avatar-cropper-viewport"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
         {imageUrl && (
           <img

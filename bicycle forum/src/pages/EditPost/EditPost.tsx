@@ -83,8 +83,13 @@ const EditPostForId = ({ postId }: { postId: string }) => {
     }
 
     const newUrls = uploadResults.map((result) => (result as { url: string }).url)
-    const { error: imagesError } = await replacePostImages(postId, [...images.keepUrls, ...newUrls])
-    if (imagesError) return { error: `Post updated, but images failed to save: ${imagesError}` }
+    const finalImages = [...images.keepUrls, ...newUrls]
+    const imagesUnchanged = finalImages.length === post.images.length && finalImages.every((url, index) => url === post.images[index])
+
+    if (!imagesUnchanged) {
+      const { error: imagesError } = await replacePostImages(postId, finalImages)
+      if (imagesError) return { error: `Post updated, but images failed to save: ${imagesError}` }
+    }
 
     navigate(`/posts/${postId}`)
     return { error: null }

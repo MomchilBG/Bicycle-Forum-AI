@@ -195,20 +195,23 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
       return
     }
 
-    // Deleting the account cascades away every DB row (profile, posts,
-    // comments, ...) but not the storage files those posts and the
-    // profile itself referenced - clear both buckets' folders for this
-    // user first, while the account (and its storage permissions) still
-    // exist, rather than leaving them all orphaned in the bucket.
-    await clearStorageFolder('avatars', profile.id)
-    await clearStorageFolder('post-images', profile.id)
-
     const { error: rpcError } = await supabase.rpc('delete_own_account')
     if (rpcError) {
       setDeleteError(rpcError.message)
       setDeleting(false)
       return
     }
+
+    // Deleting the account cascades away every DB row (profile, posts,
+    // comments, ...) but not the storage files those posts and the
+    // profile itself referenced - clear both buckets' folders for this
+    // user only now that the account is actually gone, so a failed RPC
+    // (network blip, transient DB error) can't wipe out every image while
+    // leaving the account itself intact with nothing to show for it. The
+    // access token used here is a plain JWT the SQL delete never revokes,
+    // so it's still valid for these calls even though the row is gone.
+    await clearStorageFolder('avatars', profile.id)
+    await clearStorageFolder('post-images', profile.id)
 
     await supabase.auth.signOut()
     navigate('/')

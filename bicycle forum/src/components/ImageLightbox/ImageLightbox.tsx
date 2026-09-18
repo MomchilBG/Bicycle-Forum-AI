@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react'
+import type { WheelEvent as ReactWheelEvent } from 'react'
+import { usePointerPan } from '../../lib/usePointerPan'
 import './ImageLightbox.css'
 
 const MIN_ZOOM = 1
@@ -20,7 +21,6 @@ const ImageLightbox = ({ src, onClose }: ImageLightboxProps) => {
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [fitSize, setFitSize] = useState<{ width: number; height: number } | null>(null)
   const imgRef = useRef<HTMLImageElement>(null)
-  const dragState = useRef<{ startX: number; startY: number; startOffsetX: number; startOffsetY: number } | null>(null)
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -61,23 +61,13 @@ const ImageLightbox = ({ src, onClose }: ImageLightboxProps) => {
     applyZoom(zoom > MIN_ZOOM ? MIN_ZOOM : 2)
   }
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLImageElement>) => {
+  // Below MIN_ZOOM there's nowhere to pan to (clampOffset always returns
+  // {0, 0}), so skip the setOffset call entirely rather than re-rendering
+  // on every pointermove for a drag that can't actually move anything.
+  const { onPointerDown, onPointerMove, onPointerUp } = usePointerPan((dx, dy) => {
     if (zoom <= MIN_ZOOM) return
-    dragState.current = { startX: event.clientX, startY: event.clientY, startOffsetX: offset.x, startOffsetY: offset.y }
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-
-  const handlePointerMove = (event: ReactPointerEvent<HTMLImageElement>) => {
-    if (!dragState.current) return
-    const dx = event.clientX - dragState.current.startX
-    const dy = event.clientY - dragState.current.startY
-    setOffset(clampOffset(dragState.current.startOffsetX + dx, dragState.current.startOffsetY + dy, zoom))
-  }
-
-  const handlePointerUp = (event: ReactPointerEvent<HTMLImageElement>) => {
-    dragState.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-  }
+    setOffset((current) => clampOffset(current.x + dx, current.y + dy, zoom))
+  })
 
   return (
     <div className="lightbox-overlay" onClick={onClose} onWheel={handleWheel}>
@@ -106,10 +96,10 @@ const ImageLightbox = ({ src, onClose }: ImageLightboxProps) => {
         onLoad={handleImageLoad}
         onClick={(event) => event.stopPropagation()}
         onDoubleClick={handleDoubleClick}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         style={{
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
           cursor: zoom > MIN_ZOOM ? 'grab' : 'zoom-in',

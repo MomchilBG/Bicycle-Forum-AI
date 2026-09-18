@@ -15,7 +15,12 @@ type ImageItem = { key: string; kind: 'existing'; url: string } | { key: string;
 // lifecycle - create on mount/file change, revoke on unmount - is scoped to
 // one thumbnail rather than juggled as an array in the parent.
 const ImageThumb = ({ item, onRemove }: { item: ImageItem; onRemove: () => void }) => {
-  const objectUrl = useMemo(() => (item.kind === 'new' ? URL.createObjectURL(item.file) : null), [item])
+  // `item` is a fresh object literal every render (PostForm rebuilds
+  // imageItems from scratch each time), so memoizing on it directly would
+  // re-run this on every keystroke elsewhere in the form and needlessly
+  // recreate the blob URL - depend on the stable File reference instead.
+  const newFile = item.kind === 'new' ? item.file : null
+  const objectUrl = useMemo(() => (newFile ? URL.createObjectURL(newFile) : null), [newFile])
   useEffect(() => {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl)
