@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 import { getPublicProfiles } from './publicProfiles'
 import { getTagsForPost } from './tags'
-import { getImagesForPost } from './postImages'
+import { deletePostImageFiles, getImagesForPost } from './postImages'
 
 export interface PostSummary {
   id: string
@@ -112,4 +112,15 @@ export const getPostForEdit = async (postId: string): Promise<EditablePost | nul
 
 export const updatePost = (postId: string, title: string, content: string) => supabase.from('posts').update({ title, content }).eq('id', postId)
 
-export const deletePost = (postId: string) => supabase.from('posts').delete().eq('id', postId)
+// Fetch the post's images *before* deleting it (post_images rows cascade
+// away with the post), then clean up their storage files only once the
+// delete itself has actually succeeded.
+export const deletePost = async (postId: string): Promise<{ error: { message: string } | null }> => {
+  const images = await getImagesForPost(postId)
+
+  const { error } = await supabase.from('posts').delete().eq('id', postId)
+  if (error) return { error }
+
+  if (images.length > 0) await deletePostImageFiles(images)
+  return { error: null }
+}

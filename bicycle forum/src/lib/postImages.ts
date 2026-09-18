@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { extractStoragePath } from './storageCleanup'
 
 export const ALLOWED_POST_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 
@@ -48,20 +49,39 @@ export const getImagesForPost = async (postId: string): Promise<string[]> => {
   return (data ?? []).map((row) => row.image_url)
 }
 
+// Best-effort: a failed storage cleanup shouldn't block the DB change that
+// triggered it (the post_images row, or the post itself, is already gone
+// either way) - so this swallows its own errors rather than surfacing them.
+export const deletePostImageFiles = async (urls: string[]): Promise<void> => {
+  const paths = urls.map((url) => extractStoragePath('post-images', url)).filter((path): path is string => !!path)
+  if (paths.length === 0) return
+  await supabase.storage.from('post-images').remove(paths)
+}
+
 // Editing a post's images: same clear-and-reattach approach as
 // replacePostTags() - simplest correct way to turn an ordered list of "the
 // images this post should now have" into the right rows, without diffing
 // position changes. Positions are just the array index, so re-inserting
-// always renumbers cleanly.
+// always renumbers cleanly. Any image present before but not in the new
+// list was actually removed (not just reordered) - clean those up from
+// storage too, or every edit that drops an image would leave it orphaned
+// in the bucket.
 export const replacePostImages = async (postId: string, imageUrls: string[]): Promise<{ error: string | null }> => {
+  const { data: existingRows } = await supabase.from('post_images').select('image_url').eq('post_id', postId)
+  const existingUrls = (existingRows ?? []).map((row) => row.image_url)
+
   const { error: deleteError } = await supabase.from('post_images').delete().eq('post_id', postId)
   if (deleteError) return { error: deleteError.message }
 
-  if (imageUrls.length === 0) return { error: null }
+  if (imageUrls.length > 0) {
+    const { error } = await supabase
+      .from('post_images')
+      .insert(imageUrls.map((imageUrl, position) => ({ post_id: postId, image_url: imageUrl, position })))
+    if (error) return { error: error.message }
+  }
 
-  const { error } = await supabase
-    .from('post_images')
-    .insert(imageUrls.map((imageUrl, position) => ({ post_id: postId, image_url: imageUrl, position })))
+  const removedUrls = existingUrls.filter((url) => !imageUrls.includes(url))
+  if (removedUrls.length > 0) await deletePostImageFiles(removedUrls)
 
-  return { error: error?.message ?? null }
+  return { error: null }
 }

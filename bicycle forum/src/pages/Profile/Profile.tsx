@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useAuth, type Profile as ProfileRow } from '../../auth/AuthContext'
 import { updateProfileBio, updateProfileName, uploadAvatar } from '../../lib/profile'
+import { clearStorageFolder } from '../../lib/storageCleanup'
 import { supabase } from '../../lib/supabaseClient'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import AuthField from '../../components/AuthField/AuthField'
@@ -193,6 +194,14 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
       setDeleting(false)
       return
     }
+
+    // Deleting the account cascades away every DB row (profile, posts,
+    // comments, ...) but not the storage files those posts and the
+    // profile itself referenced - clear both buckets' folders for this
+    // user first, while the account (and its storage permissions) still
+    // exist, rather than leaving them all orphaned in the bucket.
+    await clearStorageFolder('avatars', profile.id)
+    await clearStorageFolder('post-images', profile.id)
 
     const { error: rpcError } = await supabase.rpc('delete_own_account')
     if (rpcError) {

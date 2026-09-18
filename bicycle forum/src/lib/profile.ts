@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { clearStorageFolder } from './storageCleanup'
 
 export const updateProfileName = async (userId: string, firstName: string, lastName: string | null) => supabase.from('profiles').update({ first_name: firstName, last_name: lastName }).eq('id', userId)
 
@@ -13,6 +14,12 @@ export const uploadAvatar = async (userId: string, file: File): Promise<{ url: s
   if (file.size > MAX_AVATAR_BYTES) {
     return { error: 'Image must be 2MB or smaller.' }
   }
+
+  // Clear out any previous avatar first - the upload path below is stable
+  // for a given extension, but a user switching file types (e.g. png to
+  // jpg) would otherwise leave the old one behind as an orphan alongside
+  // the new one, since upsert only overwrites an exact path match.
+  await clearStorageFolder('avatars', userId)
 
   const ext = file.name.split('.').pop() ?? 'jpg'
   const path = `${userId}/avatar.${ext}`
