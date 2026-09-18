@@ -7,6 +7,8 @@ import { supabase } from '../../lib/supabaseClient'
 import PasswordInput from '../../components/PasswordInput/PasswordInput'
 import AuthField from '../../components/AuthField/AuthField'
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
+import AvatarCropper from '../../components/AvatarCropper/AvatarCropper'
+import type { AvatarCropperHandle } from '../../components/AvatarCropper/AvatarCropper'
 import '../auth.css'
 import '../profileShared.css'
 import './Profile.css'
@@ -46,9 +48,10 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   // a time in practice, so one piece of state covers all of them.
   const [savedDialog, setSavedDialog] = useState<{ title: string; message: string } | null>(null)
 
-  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
+  const [cropFile, setCropFile] = useState<File | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const cropperRef = useRef<AvatarCropperHandle>(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
@@ -135,16 +138,31 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
   }
 
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ''
+    if (!file) return
+
     setAvatarError(null)
-    setSelectedAvatarFile(event.target.files?.[0] ?? null)
+    setCropFile(file)
   }
 
-  const handleApplyAvatar = async () => {
-    if (!selectedAvatarFile) return
+  const closeCropper = () => {
+    setCropFile(null)
+    setAvatarError(null)
+  }
+
+  const handleConfirmCrop = async () => {
+    const blob = await cropperRef.current?.getCroppedBlob()
+    if (!blob) {
+      setAvatarError("Couldn't process that image.")
+      return
+    }
+
     setAvatarError(null)
     setUploadingAvatar(true)
 
-    const result = await uploadAvatar(profile.id, selectedAvatarFile)
+    const croppedFile = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+    const result = await uploadAvatar(profile.id, croppedFile)
     setUploadingAvatar(false)
 
     if ('error' in result) {
@@ -152,8 +170,7 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
       return
     }
 
-    setSelectedAvatarFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    setCropFile(null)
     await refreshProfile()
   }
 
@@ -206,20 +223,29 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
                 Select image
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFileChange} hidden />
-              <button
-                type="button"
-                className="button primary"
-                onClick={() => void handleApplyAvatar()}
-                disabled={!selectedAvatarFile || uploadingAvatar}
-              >
-                {uploadingAvatar ? 'Applying…' : 'Apply'}
-              </button>
             </div>
-            {selectedAvatarFile && <p className="profile-subtitle">{selectedAvatarFile.name}</p>}
-            {avatarError && <p className="auth-form-error">{avatarError}</p>}
           </div>
         </div>
       </div>
+
+      <form className="profile-card" id="profile-bio-box" onSubmit={handleBioSubmit}>
+        <h2>Profile description</h2>
+        <div className="auth-field">
+          <textarea
+            id="bio"
+            aria-label="Profile description"
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+            maxLength={BIO_MAX_LENGTH}
+            rows={4}
+            placeholder="Tell other riders a bit about yourself…"
+          />
+        </div>
+        {bioError && <p className="auth-form-error">{bioError}</p>}
+        <button type="submit" className="button primary" disabled={savingBio}>
+          {savingBio ? 'Saving…' : 'Save description'}
+        </button>
+      </form>
 
       <div className="profile-grid-2">
         <div className="profile-box">
@@ -285,25 +311,6 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
         </form>
       </div>
 
-      <form className="profile-card" id="profile-bio-box" onSubmit={handleBioSubmit}>
-        <h2>Profile description</h2>
-        <div className="auth-field">
-          <textarea
-            id="bio"
-            aria-label="Profile description"
-            value={bio}
-            onChange={(event) => setBio(event.target.value)}
-            maxLength={BIO_MAX_LENGTH}
-            rows={4}
-            placeholder="Tell other riders a bit about yourself…"
-          />
-        </div>
-        {bioError && <p className="auth-form-error">{bioError}</p>}
-        <button type="submit" className="button primary" disabled={savingBio}>
-          {savingBio ? 'Saving…' : 'Save description'}
-        </button>
-      </form>
-
       <div id="profile-danger-zone">
         <button type="button" id="profile-logout" onClick={() => void signOut()}>
           Log out
@@ -312,6 +319,20 @@ const ProfileContent = ({ profile }: { profile: ProfileRow }) => {
           Delete profile
         </button>
       </div>
+
+      {cropFile && (
+        <ConfirmDialog
+          title="Adjust your photo"
+          message="Drag to reposition, and use the slider to zoom."
+          confirmLabel="Save"
+          confirming={uploadingAvatar}
+          error={avatarError}
+          onConfirm={() => void handleConfirmCrop()}
+          onCancel={closeCropper}
+        >
+          <AvatarCropper ref={cropperRef} file={cropFile} />
+        </ConfirmDialog>
+      )}
 
       {showDeleteConfirm && (
         <ConfirmDialog

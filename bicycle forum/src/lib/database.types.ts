@@ -99,6 +99,38 @@ export type Database = {
           },
         ]
       }
+      post_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          position: number
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          position: number
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          position?: number
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_tags: {
         Row: {
           created_at: string
@@ -140,7 +172,6 @@ export type Database = {
           created_at: string
           dislike_count: number
           id: string
-          image_url: string | null
           like_count: number
           title: string
           updated_at: string
@@ -152,7 +183,6 @@ export type Database = {
           created_at?: string
           dislike_count?: number
           id?: string
-          image_url?: string | null
           like_count?: number
           title: string
           updated_at?: string
@@ -164,7 +194,6 @@ export type Database = {
           created_at?: string
           dislike_count?: number
           id?: string
-          image_url?: string | null
           like_count?: number
           title?: string
           updated_at?: string

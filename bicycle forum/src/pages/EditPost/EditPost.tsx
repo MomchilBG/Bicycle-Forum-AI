@@ -4,9 +4,9 @@ import { useAuth } from '../../auth/AuthContext'
 import { getPostForEdit, updatePost } from '../../lib/posts'
 import type { EditablePost } from '../../lib/posts'
 import { replacePostTags } from '../../lib/tags'
-import { uploadPostImage } from '../../lib/postImages'
+import { replacePostImages, uploadPostImage } from '../../lib/postImages'
 import PostForm from '../../components/PostForm/PostForm'
-import type { PostImageChange } from '../../components/PostForm/PostForm'
+import type { PostImagesChange } from '../../components/PostForm/PostForm'
 
 const EditPost = () => {
   const { id } = useParams<{ id: string }>()
@@ -69,23 +69,22 @@ const EditPostForId = ({ postId }: { postId: string }) => {
     )
   }
 
-  const handleSubmit = async (title: string, content: string, tags: string[], image: PostImageChange): Promise<{ error: string | null }> => {
-    let imageUrl: string | null | undefined
-    if (image.file) {
-      const imageResult = await uploadPostImage(profile.id, image.file)
-      if ('error' in imageResult) {
-        return { error: `Image failed to upload: ${imageResult.error}` }
-      }
-      imageUrl = imageResult.url
-    } else if (image.remove) {
-      imageUrl = null
-    }
-
-    const { error } = await updatePost(postId, title, content, imageUrl)
+  const handleSubmit = async (title: string, content: string, tags: string[], images: PostImagesChange): Promise<{ error: string | null }> => {
+    const { error } = await updatePost(postId, title, content)
     if (error) return { error: error.message }
 
     const { error: tagError } = await replacePostTags(postId, tags)
     if (tagError) return { error: `Post updated, but tags failed to save: ${tagError}` }
+
+    const uploadResults = await Promise.all(images.newFiles.map((file) => uploadPostImage(profile.id, file)))
+    const failed = uploadResults.find((result) => 'error' in result)
+    if (failed && 'error' in failed) {
+      return { error: `Post updated, but an image failed to upload: ${failed.error}` }
+    }
+
+    const newUrls = uploadResults.map((result) => (result as { url: string }).url)
+    const { error: imagesError } = await replacePostImages(postId, [...images.keepUrls, ...newUrls])
+    if (imagesError) return { error: `Post updated, but images failed to save: ${imagesError}` }
 
     navigate(`/posts/${postId}`)
     return { error: null }
@@ -98,7 +97,7 @@ const EditPostForId = ({ postId }: { postId: string }) => {
       initialTitle={post.title}
       initialContent={post.content}
       initialTags={post.tags}
-      initialImageUrl={post.imageUrl}
+      initialImageUrls={post.images}
       submitLabel="Save changes"
       submittingLabel="Saving…"
       cancelHref={`/posts/${postId}`}

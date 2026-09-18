@@ -471,8 +471,14 @@ const PostViewForPost = ({ postId }: { postId: string }) => {
         </p>
         <div className="post-view-content">{post.content}</div>
 
-        {post.imageUrl && (
-          <img className="post-view-image" src={post.imageUrl} alt="" />
+        {post.images.length > 0 && (
+          <ul className="post-view-images">
+            {post.images.map((url) => (
+              <li key={url}>
+                <img src={url} alt="" />
+              </li>
+            ))}
+          </ul>
         )}
 
         {post.tags.length > 0 && (

@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { createPost } from '../../lib/posts'
 import { attachTagsToPost } from '../../lib/tags'
-import { uploadPostImage } from '../../lib/postImages'
+import { replacePostImages, uploadPostImage } from '../../lib/postImages'
 import PostForm from '../../components/PostForm/PostForm'
-import type { PostImageChange } from '../../components/PostForm/PostForm'
+import type { PostImagesChange } from '../../components/PostForm/PostForm'
 
 const CreatePost = () => {
   const navigate = useNavigate()
@@ -30,17 +30,8 @@ const CreatePost = () => {
 
   const authorId = profile.id
 
-  const handleSubmit = async (title: string, content: string, tags: string[], image: PostImageChange): Promise<{ error: string | null }> => {
-    let imageUrl: string | null = null
-    if (image.file) {
-      const imageResult = await uploadPostImage(authorId, image.file)
-      if ('error' in imageResult) {
-        return { error: `Image failed to upload: ${imageResult.error}` }
-      }
-      imageUrl = imageResult.url
-    }
-
-    const { data, error } = await createPost(authorId, title, content, imageUrl)
+  const handleSubmit = async (title: string, content: string, tags: string[], images: PostImagesChange): Promise<{ error: string | null }> => {
+    const { data, error } = await createPost(authorId, title, content)
 
     if (error || !data) {
       return { error: error?.message ?? 'Something went wrong creating your post.' }
@@ -50,6 +41,20 @@ const CreatePost = () => {
       const { error: tagAttachError } = await attachTagsToPost(data.id, tags)
       if (tagAttachError) {
         return { error: `Post created, but tags failed to save: ${tagAttachError}` }
+      }
+    }
+
+    if (images.newFiles.length > 0) {
+      const uploadResults = await Promise.all(images.newFiles.map((file) => uploadPostImage(authorId, file)))
+      const failed = uploadResults.find((result) => 'error' in result)
+      if (failed && 'error' in failed) {
+        return { error: `Post created, but an image failed to upload: ${failed.error}` }
+      }
+
+      const urls = uploadResults.map((result) => (result as { url: string }).url)
+      const { error: imagesError } = await replacePostImages(data.id, urls)
+      if (imagesError) {
+        return { error: `Post created, but images failed to save: ${imagesError}` }
       }
     }
 

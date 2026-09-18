@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient'
 import { getPublicProfiles } from './publicProfiles'
 import type { PublicProfile } from './publicProfiles'
 import { getTagsForPost } from './tags'
+import { getImagesForPost } from './postImages'
 
 export interface Badge {
   id: string
@@ -18,7 +19,7 @@ export interface PostDetail {
   updatedAt: string
   upvoteCount: number
   downvoteCount: number
-  imageUrl: string | null
+  images: string[]
   author: PublicProfile
   authorBadges: Badge[]
   tags: string[]
@@ -74,7 +75,7 @@ const getBadgesForUsers = async (userIds: string[]): Promise<Map<string, Badge[]
 export const getPostDetail = async (postId: string, viewerId: string | null): Promise<PostDetail | null> => {
   const { data: post, error } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, updated_at, like_count, dislike_count, author_id, image_url')
+    .select('id, title, content, created_at, updated_at, like_count, dislike_count, author_id')
     .eq('id', postId)
     .single()
 
@@ -82,10 +83,11 @@ export const getPostDetail = async (postId: string, viewerId: string | null): Pr
 
   // Independent of each other - fetch them concurrently rather than in
   // series, since each one is its own network round trip.
-  const [profiles, badgesByUser, tags, voteRow, savedRow] = await Promise.all([
+  const [profiles, badgesByUser, tags, images, voteRow, savedRow] = await Promise.all([
     getPublicProfiles([post.author_id]),
     getBadgesForUsers([post.author_id]),
     getTagsForPost(postId),
+    getImagesForPost(postId),
     viewerId
       ? supabase.from('votes').select('value').eq('post_id', postId).eq('voter_id', viewerId).maybeSingle()
       : Promise.resolve(null),
@@ -110,7 +112,7 @@ export const getPostDetail = async (postId: string, viewerId: string | null): Pr
     updatedAt: post.updated_at,
     upvoteCount: post.like_count,
     downvoteCount: post.dislike_count,
-    imageUrl: post.image_url,
+    images,
     author,
     authorBadges: badgesByUser.get(post.author_id) ?? [],
     tags,

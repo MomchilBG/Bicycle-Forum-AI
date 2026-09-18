@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ALLOWED_POST_IMAGE_LABEL, ALLOWED_POST_IMAGE_TYPES, validatePostImage } from '../../lib/postImages'
+import { ALLOWED_POST_IMAGE_LABEL, ALLOWED_POST_IMAGE_TYPES, MAX_POST_IMAGES, validatePostImage } from '../../lib/postImages'
 import '../../pages/auth.css'
 import './PostForm.css'
 
@@ -9,10 +9,37 @@ const TITLE_PATTERN = /^.{4,64}$/
 const CONTENT_PATTERN = /^[\s\S]{16,8192}$/
 const ALLOWED_POST_IMAGE_TYPES_ACCEPT = ALLOWED_POST_IMAGE_TYPES.join(',')
 
-export interface PostImageChange {
-  file: File | null
-  // Clear the image with no replacement. Only meaningful when `file` is null.
-  remove: boolean
+type ImageItem = { key: string; kind: 'existing'; url: string } | { key: string; kind: 'new'; file: File }
+
+// A standalone component (not inlined in PostForm) so its object-URL
+// lifecycle - create on mount/file change, revoke on unmount - is scoped to
+// one thumbnail rather than juggled as an array in the parent.
+const ImageThumb = ({ item, onRemove }: { item: ImageItem; onRemove: () => void }) => {
+  const objectUrl = useMemo(() => (item.kind === 'new' ? URL.createObjectURL(item.file) : null), [item])
+  useEffect(() => {
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [objectUrl])
+
+  return (
+    <li className="post-image-thumb">
+      <img src={item.kind === 'existing' ? item.url : objectUrl!} alt="" />
+      <button type="button" onClick={onRemove} aria-label="Remove image">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <line x1="4" y1="4" x2="20" y2="20" />
+          <line x1="20" y1="4" x2="4" y2="20" />
+        </svg>
+      </button>
+    </li>
+  )
+}
+
+export interface PostImagesChange {
+  // Existing images to keep, in order.
+  keepUrls: string[]
+  // New files to upload, appended after keepUrls.
+  newFiles: File[]
 }
 
 export interface PostFormProps {
@@ -20,11 +47,11 @@ export interface PostFormProps {
   initialTitle?: string
   initialContent?: string
   initialTags?: string[]
-  initialImageUrl?: string | null
+  initialImageUrls?: string[]
   submitLabel: string
   submittingLabel: string
   cancelHref?: string
-  onSubmit: (title: string, content: string, tags: string[], image: PostImageChange) => Promise<{ error: string | null }>
+  onSubmit: (title: string, content: string, tags: string[], images: PostImagesChange) => Promise<{ error: string | null }>
 }
 
 const PostForm = ({
@@ -32,7 +59,7 @@ const PostForm = ({
   initialTitle = '',
   initialContent = '',
   initialTags = [],
-  initialImageUrl = null,
+  initialImageUrls = [],
   submitLabel,
   submittingLabel,
   cancelHref,
@@ -46,43 +73,54 @@ const PostForm = ({
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imageRemoved, setImageRemoved] = useState(false)
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>(initialImageUrls)
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([])
   const [imageError, setImageError] = useState<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  // Derived from imageFile (not separate state) so there's nothing to
-  // resync via an effect - only the URL's lifetime (revoking the previous
-  // one when it's replaced or on unmount) needs an effect.
-  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile])
-  useEffect(() => {
-    return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview)
-    }
-  }, [imagePreview])
+  const imageItems: ImageItem[] = [
+    ...existingImageUrls.map((url): ImageItem => ({ key: url, kind: 'existing', url })),
+    ...newImageFiles.map((file, index): ImageItem => ({ key: `new-${index}-${file.name}-${file.size}`, kind: 'new', file })),
+  ]
+  const imageSlotsLeft = MAX_POST_IMAGES - imageItems.length
 
-  const displayedImageUrl = imagePreview ?? (imageRemoved ? null : initialImageUrl)
-
-  const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null
+  const handleImageFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
     event.target.value = ''
-    if (!file) return
+    if (files.length === 0) return
 
-    const validationError = validatePostImage(file)
-    if (validationError) {
-      setImageError(validationError)
+    if (imageSlotsLeft <= 0) {
+      setImageError(`You can add up to ${MAX_POST_IMAGES} images.`)
       return
     }
 
-    setImageError(null)
-    setImageFile(file)
-    setImageRemoved(false)
+    const accepted: File[] = []
+    let validationError: string | null = null
+    for (const file of files) {
+      const error = validatePostImage(file)
+      if (error) {
+        validationError = error
+        continue
+      }
+      accepted.push(file)
+    }
+
+    const skipped = accepted.length - imageSlotsLeft
+    const toAdd = accepted.slice(0, imageSlotsLeft)
+
+    setImageError(
+      validationError ?? (skipped > 0 ? `Added ${toAdd.length}; skipped ${skipped} - a post can have at most ${MAX_POST_IMAGES} images.` : null),
+    )
+    if (toAdd.length > 0) setNewImageFiles((current) => [...current, ...toAdd])
   }
 
-  const handleRemoveImage = () => {
-    setImageFile(null)
+  const removeImageItem = (item: ImageItem) => {
     setImageError(null)
-    setImageRemoved(true)
+    if (item.kind === 'existing') {
+      setExistingImageUrls((current) => current.filter((url) => url !== item.url))
+    } else {
+      setNewImageFiles((current) => current.filter((file) => file !== item.file))
+    }
   }
 
   const addTag = () => {
@@ -136,7 +174,7 @@ const PostForm = ({
     }
 
     setSubmitting(true)
-    const { error } = await onSubmit(trimmedTitle, trimmedContent, tags, { file: imageFile, remove: imageRemoved })
+    const { error } = await onSubmit(trimmedTitle, trimmedContent, tags, { keepUrls: existingImageUrls, newFiles: newImageFiles })
     setSubmitting(false)
 
     if (error) setFormError(error)
@@ -148,7 +186,10 @@ const PostForm = ({
         <h1>{heading}</h1>
 
         <div className="auth-field">
-          <label htmlFor="title">Title</label>
+          <label htmlFor="title">
+            Title
+            <span className="auth-required-mark"> *</span>
+          </label>
           <input
             id="title"
             value={title}
@@ -159,7 +200,10 @@ const PostForm = ({
         </div>
 
         <div className="auth-field">
-          <label htmlFor="content">Content</label>
+          <label htmlFor="content">
+            Content
+            <span className="auth-required-mark"> *</span>
+          </label>
           <textarea
             id="content"
             value={content}
@@ -171,30 +215,37 @@ const PostForm = ({
         </div>
 
         <div className="auth-field">
-          <label htmlFor="postImage">Image (optional)</label>
+          <label htmlFor="postImages">Images</label>
           <div id="post-image-field">
-            {displayedImageUrl && (
-              <img id="post-image-preview" src={displayedImageUrl} alt="" />
+            {imageItems.length > 0 && (
+              <ul id="post-image-list">
+                {imageItems.map((item) => (
+                  <ImageThumb key={item.key} item={item} onRemove={() => removeImageItem(item)} />
+                ))}
+              </ul>
             )}
             <div id="post-image-actions">
               <input
                 ref={imageInputRef}
-                id="postImage"
+                id="postImages"
                 type="file"
                 accept={ALLOWED_POST_IMAGE_TYPES_ACCEPT}
-                onChange={handleImageFileChange}
+                multiple
+                onChange={handleImageFilesChange}
                 hidden
               />
-              <button type="button" className="button" onClick={() => imageInputRef.current?.click()}>
-                {displayedImageUrl ? 'Replace image' : 'Add image'}
+              <button
+                type="button"
+                className="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={imageSlotsLeft <= 0}
+              >
+                Add image{imageItems.length > 0 ? 's' : ''}
               </button>
-              {displayedImageUrl && (
-                <button type="button" className="button" onClick={handleRemoveImage}>
-                  Remove image
-                </button>
-              )}
             </div>
-            <p id="post-image-hint">{ALLOWED_POST_IMAGE_LABEL} - up to 5MB.</p>
+            <p id="post-image-hint">
+              Up to {MAX_POST_IMAGES} images ({imageItems.length}/{MAX_POST_IMAGES}). {ALLOWED_POST_IMAGE_LABEL} - up to 5MB each.
+            </p>
             {imageError && <span className="auth-error">{imageError}</span>}
           </div>
         </div>
