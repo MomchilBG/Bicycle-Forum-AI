@@ -91,9 +91,9 @@
 }
 
 .badge-list li.role-pill.role-admin {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-color: var(--accent-border);
+  background: var(--admin-bg);
+  color: var(--admin);
+  border-color: var(--admin-border);
 }
 
 .badge-list li.blocked-pill {
@@ -366,9 +366,9 @@
 }
 
 .comment-badge-pill.role-pill.role-admin {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-color: var(--accent-border);
+  background: var(--admin-bg);
+  color: var(--admin);
+  border-color: var(--admin-border);
 }
 
 .comment-badge-pill.blocked-pill {

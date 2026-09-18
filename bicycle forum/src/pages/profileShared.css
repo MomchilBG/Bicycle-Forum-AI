@@ -121,9 +121,9 @@
 }
 
 .badge-pill.role-pill.role-admin {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-color: var(--accent-border);
+  background: var(--admin-bg);
+  color: var(--admin);
+  border-color: var(--admin-border);
 }
 
 .badge-pill.blocked-pill {

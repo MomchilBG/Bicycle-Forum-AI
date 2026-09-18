@@ -20,6 +20,18 @@
   font-size: 15px;
 }
 
+/* Without this, the "Add one" bio prompt link (the only inline link this
+   class wraps) falls back to the browser's default blue/visited-purple
+   link colors instead of the app's own accent. */
+.profile-subtitle a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.profile-subtitle a:hover {
+  text-decoration: underline;
+}
+
 #profile-photo-row {
   display: flex;
   align-items: center;
